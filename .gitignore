@@ -1,0 +1,6 @@
+﻿slprj/
+*.asv
+*.autosave
+*.slxc
+*.mexw64
+.DS_Store
