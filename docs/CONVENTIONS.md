@@ -8,7 +8,7 @@ All vehicle models use a right-handed Cartesian reference frame:
 - **y-axis:** lateral, positive towards the left side of the vehicle.
 - **z-axis:** vertical, positive upwards.
 
-Positive rotations follow the right-hand rule. In particulat, positive pitch corresponds to a nose-down rotation about the positive y-axis.
+Positive rotations follow the right-hand rule. In particular, positive pitch corresponds to a nose-down rotation about the positive y-axis.
 
 Consequently, downwards vertical displacements are negative.
 
@@ -29,6 +29,6 @@ All physical quantities are expressed exclusively in the International System of
 
 ## 3. Coordinate origin
 
-Unless otherwise specified, the global reference-frame origin is locates at the vehicle's center of gravity (CG), under static conditions.
+Unless otherwise specified, the global reference-frame origin is located at the vehicle's center of gravity (CG), under static conditions.
 
 Local reference frames may be introduced when required by individual models. Their origins and orientations must always be explicitly documented.
