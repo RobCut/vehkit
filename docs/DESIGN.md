@@ -20,11 +20,11 @@ The following features are included:
 - Axle ordering is verified from their assigned longitudinal positions in the global vehicle reference frame.
 - Invalid axle ordering in the `direct` geometry method must produce the identifiable error `vehkit:axleOrderMismatch`.
 - In the `static_load_based` geometry method, axle ordering is declared by the axle structure and cannot be geometrically verified because longitudinal axle positions are derived rather than assigned.
-- Wheels ordered from left to right, according to non-increasing global lateral coordinate (`y`).
+- Wheels within each axle are ordered from left to right, according to non-increasing global lateral coordinate (`y`).
 - Wheels with identical lateral coordinates are allowed, supporting configurations such as twin wheels.
-- When two or more wheels have identical lateral coordinates, their stable identifiers are used as a secondary deterministic ordering criterion.
-- Wheel identifiers are compared using natural numeric ordering, so `wheel_2` precedes `wheel_10`.
-- Wheel ordering is verified from their assigned coordinates and identifiers. Invalid ordering must produce the identifiable error `vehkit:wheelOrderMismatch`.
+- When two or more wheels within the same axle have identical lateral coordinates, their stable identifiers are used as a secondary deterministic ordering criterion.
+- The canonical ordering rules for wheel identifiers are defined in `docs/SCHEMA.md`.
+- Wheel ordering is verified from the assigned coordinates and identifiers within each axle. Invalid ordering must produce the identifiable error `vehkit:wheelOrderMismatch`.
 
 **Geometry**
 
@@ -83,7 +83,7 @@ The following features are included:
 
 - Static-load-based geometry calculations use the reference load configuration.
 
-- Static equilibrium calculations are supported only for vehicles with exactly two axles. Any static equilibrium calculation requested for a vehicle with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount`.
+- Static equilibrium calculations are supported only for vehicles with exactly two axles. A `static_load_based` geometry definition with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount` during vehicle validation. Any static equilibrium calculation requested for a vehicle with a different number of axles must also produce this error.
 
 - Static equilibrium calculations use the standard gravitational acceleration:
   - `g = 9.80665 m/s^2`.
@@ -102,11 +102,11 @@ The following features are included:
 - Inertia validation is performed according to the available data:
   - Individual components must be finite numerical values.
   - When the complete diagonal is available:
-  - Diagonal inertia components must be non-negative.
-  - The triangle inequalities on the diagonal components must be satisfied within the defined numerical tolerance:
-    - `Ixx + Iyy - Izz >= -tol_triangle`.
-    - `Ixx + Izz - Iyy >= -tol_triangle`.
-    - `Iyy + Izz - Ixx >= -tol_triangle`.
+    - Diagonal inertia components must be non-negative.
+    - The triangle inequalities on the diagonal components must be satisfied within the defined numerical tolerance:
+      - `Ixx + Iyy - Izz >= -tol_triangle`.
+      - `Ixx + Izz - Iyy >= -tol_triangle`.
+      - `Iyy + Izz - Ixx >= -tol_triangle`.
   - When the complete inertia tensor is available:
     - Positive semidefiniteness is checked using an explicitly defined numerical tolerance on its eigenvalues.
     - The minimum eigenvalue must satisfy `lambda_min >= -tol_PSD`.
@@ -168,8 +168,8 @@ The following features are included:
 
 **Tyres**
 
-- Optional tyre representation.
-- Initial representation limited to a model identifier and an uninterpreted parameter block.
+- Optional tyre representation at vehicle level.
+- In v0.1, the vehicle supports a single tyre model identifier and one uninterpreted parameter block shared by all wheels.
 - Model-specific parameter validation is outside the scope of v0.1 and belongs to the corresponding tyre-model project.
 
 **Data management**
@@ -182,7 +182,7 @@ The following features are included:
 - Explicit distinction between absent, unknown and zero-valued data.
 - JSON loading and saving must preserve assigned data through a complete round-trip.
 - Round-trip tests must verify that absent, unknown and zero-valued data remain distinct.
-- The JSON representation of explicitly unknown values will be defined during schema implementation.
+- The JSON representation of explicitly unknown values is defined in `docs/SCHEMA.md`.
 - Floating-point comparisons in round-trip tests must use an explicitly defined numerical tolerance.
 
 **MATLAB functionality**
@@ -256,13 +256,13 @@ The following identifiable error identifiers are defined for v0.1:
 | Error identifier | Condition |
 |---|---|
 | `vehkit:missingData` | Required data are absent or explicitly unknown for a requested calculation. The error message must distinguish between absent and explicitly unknown data. |
-| `vehkit:invalidJSONStructure` | The JSON structure is invalid or does not conform to the expected structure, including a missing or malformed `schema_version`. |
+| `vehkit:invalidJSONStructure` | The JSON document contains syntax or structural errors, duplicate or invalid property names, missing required fields, incompatible data types, or unrecognized fields. It also includes a missing or malformed `schema_version`. |
 | `vehkit:unsupportedSchemaVersion` | The JSON file contains a formally valid but unsupported schema version. |
 | `vehkit:conflictingGeometryDefinition` | Parameters exclusive to the geometry definition method not selected by `geometry.method` are present. |
-| `vehkit:unsupportedAxleCount` | A static equilibrium calculation is requested for a vehicle with a number of axles different from two. |
-| `vehkit:wheelOrderMismatch` | Wheels are not ordered according to non-increasing global lateral coordinate, including the required secondary ordering criterion for identical coordinates. |
+| `vehkit:unsupportedAxleCount` | A `static_load_based` geometry definition or static equilibrium calculation is requested for a vehicle with a number of axles different from two. |
+| `vehkit:wheelOrderMismatch` | Wheels within an axle are not ordered according to non-increasing global lateral coordinate, including the required secondary ordering criterion for identical coordinates. |
 | `vehkit:invalidInertia` | The specified inertia tensor violates the applicable mathematical or physical validity conditions. |
-| `vehkit:invalidParameter` | A parameter contains an invalid value, including non-finite values or values outside its permitted range. |
+| `vehkit:invalidParameter` | A parameter contains an invalid value, including non-finite values, values outside its permitted range, unknown values not permitted by the schema, invalid or duplicate identifiers, empty strings where prohibited, invalid enumeration values, or null values not permitted by the corresponding field definition. |
 | `vehkit:axleOrderMismatch` | Axles are not ordered from front to rear according to their assigned longitudinal positions. |
 
 Additional identifiers may be introduced when required by specific validation functions.
@@ -277,9 +277,9 @@ The initial release will be considered complete when:
 - Geometry validation correctly distinguishes between direct and static-load-based methods.
 - Conflicting geometry parameters produce `vehkit:conflictingGeometryDefinition`.
 - Static-load-based geometry calculations work for two-axle vehicles.
-- Static equilibrium calculations reject vehicles with unsupported axle configurations with `vehkit:unsupportedAxleCount`.
+- Static-load-based geometry definitions and static equilibrium calculations reject vehicles with unsupported axle configurations with `vehkit:unsupportedAxleCount`.
 - Direct geometry supports vehicles with more than two axles.
-- Wheel ordering is verified and invalid ordering produces `vehkit:wheelOrderMismatch`.
+- Wheel ordering within each axle is verified and invalid ordering produces `vehkit:wheelOrderMismatch`.
 - Wheel longitudinal positions are correctly inherited from their corresponding axles.
 - Derived geometric properties agree with independently calculated reference values.
 - A two-axle reference vehicle can be defined using both geometry methods with consistent input data.
@@ -319,10 +319,17 @@ The following numerical tolerances are used throughout the MATLAB implementation
 - Absolute tolerance: `atol = 1e-10`.
 - Relative tolerance: `rtol = 1e-8`.
 - General comparison criterion:
+
   `abs(a - b) <= atol + rtol * max(abs(a), abs(b))`.
+
 - Positive semidefiniteness tolerance:
+
   `tol_PSD = atol + rtol * norm(I, 2)`,
+
   where `I` is the complete inertia tensor and `norm(I, 2)` is its spectral norm.
+
 - Diagonal-component triangle inequality tolerance:
+
   `tol_triangle = atol + rtol * norm(diag(Ixx, Iyy, Izz), 2)`,
+
   where the diagonal components are available.
