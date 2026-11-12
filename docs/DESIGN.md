@@ -10,6 +10,8 @@ Its scope is deliberately limited to vehicle-level properties, axle and wheel or
 
 The following features are included:
 
+#### 1.1.1. Delivered in alpha
+
 **Vehicle structure**
 
 - General vehicle definition.
@@ -19,7 +21,6 @@ The following features are included:
 - Axles ordered from front to rear.
 - Axle ordering is verified from their assigned longitudinal positions in the global vehicle reference frame.
 - Invalid axle ordering in the `direct` geometry method must produce the identifiable error `vehkit:axleOrderMismatch`.
-- In the `static_load_based` geometry method, axle ordering is declared by the axle structure and cannot be geometrically verified because longitudinal axle positions are derived rather than assigned.
 - Wheels within each axle are ordered from left to right, according to non-increasing global lateral coordinate (`y`).
 - Wheels with identical lateral coordinates are allowed, supporting configurations such as twin wheels.
 - When two or more wheels within the same axle have identical lateral coordinates, their stable identifiers are used as a secondary deterministic ordering criterion.
@@ -28,41 +29,25 @@ The following features are included:
 
 **Geometry**
 
-- Two mutually exclusive geometry definition methods, selected through the explicit field `geometry.method`:
-  - `direct`
-  - `static_load_based`
+- One geometry definition is supported in alpha: `direct`. The method is selected through the explicit field `geometry.method` whose only accepted value in alpha is `direct`. The `static_load_based` method is specified in §1.1.2.
 
 - **Direct geometry:** longitudinal axle positions are assigned directly. Wheelbase, track widths and CG-to-axle distances are derived.
 
-- **Static-load-based geometry:** wheelbase and front weight distribution are assigned, and longitudinal axle positions are reconstructed using static equilibrium equations. This method is restricted to two-axle vehicles.
-
 - The following parameters are exclusive to the direct method:
   - Longitudinal axle positions.
-
-- The following parameters are exclusive to the static-load-based method:
-  - Wheelbase.
-  - Front weight distribution (`front_weight_distribution`).
 
 - The following parameters are common to both methods:
   - Lateral wheel positions.
   - Reference vehicle CG height above the road surface.
   - Individual loaded radius for each wheel.
 
-- The presence of parameters exclusive to the geometry definition method not selected by `geometry.method` is not allowed and must produce the identifiable error `vehkit:conflictingGeometryDefinition`.
-
 - The wheelbase (`wheelbase`) is defined as the longitudinal distance between the first and last axles:
   - `wheelbase = x_first_axle - x_last_axle`.
   - This definition applies to vehicles with any number of axles.
-  - The `static_load_based` method remains restricted to two-axle vehicles.
 
 - In the direct method, longitudinal axle positions are assigned individually. Each wheel inherits its longitudinal coordinate (`x`) from its corresponding axle.
 
 - Lateral wheel positions are assigned individually for each wheel.
-
-- The front weight distribution (`front_weight_distribution`) is defined as the dimensionless fraction of the total static vehicle weight supported by the front axle:
-  - It is a fraction, not a percentage.
-  - Its valid range is strictly between zero and one: `0 < front_weight_distribution < 1`.
-  - It refers exclusively to the reference load configuration.
 
 - All assigned and derived positions are expressed as three-dimensional vectors in the global vehicle reference frame.
 
@@ -81,16 +66,7 @@ The following features are included:
 
 - Derived geometric properties include wheel-centre positions, wheelbase, track widths and CG-to-axle distances.
 
-- Static-load-based geometry calculations use the reference load configuration.
-
-- Static equilibrium calculations are supported only for vehicles with exactly two axles. A `static_load_based` geometry definition with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount` during vehicle validation. Any static equilibrium calculation requested for a vehicle with a different number of axles must also produce this error.
-
-- Static equilibrium calculations use the standard gravitational acceleration:
-  - `g = 9.80665 m/s^2`.
-
-- Static axle loads may be derived when the required mass and CG data are available. Individual wheel loads are not derived in v0.1.
-
-- The distribution of vertical loads between wheels belonging to the same axle is outside the scope of v0.1 because it requires additional assumptions or physical information.
+- The presence of `geometry.wheelbase` or `geometry.front_weight_distribution` when `geometry.method` is `direct` must produce the identifiable error `vehkit:conflictingGeometryDefinition`.
 
 **Mass and inertia**
 
@@ -117,6 +93,74 @@ The following features are included:
 
 - Separation between vehicle definition and load configurations.
 - One reference load configuration (`reference`).
+
+- Axle and wheel positions remain unchanged between load configurations.
+
+**Tyres**
+
+- Optional tyre representation at vehicle level.
+- In v0.1, the vehicle supports a single tyre model identifier and one uninterpreted parameter block shared by all wheels.
+- Model-specific parameter validation is outside the scope of v0.1 and belongs to the corresponding tyre-model project.
+
+**Data management**
+
+- JSON-based data loading and saving.
+- Persistent storage of assigned values only.
+- Derived properties are calculated in MATLAB and are not saved as independent source data.
+- Schema version identification through `schema_version`.
+- Structural and physical validation.
+- Explicit distinction between absent, unknown and zero-valued data.
+- JSON loading and saving must preserve assigned data through a complete round-trip.
+- Round-trip tests must verify that absent, unknown and zero-valued data remain distinct.
+- The JSON representation of explicitly unknown values is defined in `docs/SCHEMA.md`.
+- Floating-point comparisons in round-trip tests must use an explicitly defined numerical tolerance.
+
+**MATLAB functionality**
+
+- Dedicated functions for loading, saving, validating and calculating vehicle properties.
+- Each calculation function performs a clearly defined operation.
+- Explicit error reporting when required data are absent or explicitly unknown.
+- Identifiable error identifiers for invalid or unsupported configurations.
+- Automated tests for implemented functionality.
+
+#### 1.1.2. Delivered before the v0.1 release
+
+**Vehicle structure**
+
+- In the `static_load_based` geometry method, axle ordering is declared by the axle structure and cannot be geometrically verified because longitudinal axle positions are derived rather than assigned.
+
+**Geometry**
+
+- The `static_load_based` geometry definition method is added. With this addition, the `geometry.method` field accepts both values: `direct` and `static_load_based`. The two methods are mutually exclusive.
+
+- **Static-load-based geometry:** wheelbase and front weight distribution are assigned, and longitudinal axle positions are reconstructed using static equilibrium equations. This method is restricted to two-axle vehicles.
+
+- The following parameters are exclusive to the static-load-based method:
+  - Wheelbase.
+  - Front weight distribution (`front_weight_distribution`).
+
+- The presence of parameters exclusive to the geometry definition method not selected by `geometry.method` is not allowed and must produce the identifiable error `vehkit:conflictingGeometryDefinition`.
+
+- The `static_load_based` method remains restricted to two-axle vehicles.
+
+- The front weight distribution (`front_weight_distribution`) is defined as the dimensionless fraction of the total static vehicle weight supported by the front axle:
+  - It is a fraction, not a percentage.
+  - Its valid range is strictly between zero and one: `0 < front_weight_distribution < 1`.
+  - It refers exclusively to the reference load configuration.
+
+- Static-load-based geometry calculations use the reference load configuration.
+
+- Static equilibrium calculations are supported only for vehicles with exactly two axles. A `static_load_based` geometry definition with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount` during vehicle validation. Any static equilibrium calculation requested for a vehicle with a different number of axles must also produce this error.
+
+- Static equilibrium calculations use the standard gravitational acceleration:
+  - `g = 9.80665 m/s^2`.
+
+- Static axle loads may be derived when the required mass and CG data are available. Individual wheel loads are not derived in v0.1.
+
+- The distribution of vertical loads between wheels belonging to the same axle is outside the scope of v0.1 because it requires additional assumptions or physical information.
+
+**Load configurations**
+
 - One alternative load configuration (`alternative`).
 - The alternative configuration must explicitly specify:
   - Total mass.
@@ -126,8 +170,6 @@ The following features are included:
 - The CG displacement is defined as the alternative CG position minus the reference CG position, expressed in the global vehicle reference frame.
 
 - The alternative inertia tensor is referred to its own CG, with axes parallel to the global reference axes.
-
-- Axle and wheel positions remain unchanged between load configurations.
 
 - The alternative CG height is derived from its vertical displacement relative to the reference configuration.
 
@@ -165,33 +207,6 @@ The following features are included:
 - Air density and relative airspeed are operational inputs supplied to the aerodynamic calculation functions, not vehicle properties.
 
 - Missing data required by a specific calculation must produce an identifiable missing-data error, without preventing calculations that have sufficient input data.
-
-**Tyres**
-
-- Optional tyre representation at vehicle level.
-- In v0.1, the vehicle supports a single tyre model identifier and one uninterpreted parameter block shared by all wheels.
-- Model-specific parameter validation is outside the scope of v0.1 and belongs to the corresponding tyre-model project.
-
-**Data management**
-
-- JSON-based data loading and saving.
-- Persistent storage of assigned values only.
-- Derived properties are calculated in MATLAB and are not saved as independent source data.
-- Schema version identification through `schema_version`.
-- Structural and physical validation.
-- Explicit distinction between absent, unknown and zero-valued data.
-- JSON loading and saving must preserve assigned data through a complete round-trip.
-- Round-trip tests must verify that absent, unknown and zero-valued data remain distinct.
-- The JSON representation of explicitly unknown values is defined in `docs/SCHEMA.md`.
-- Floating-point comparisons in round-trip tests must use an explicitly defined numerical tolerance.
-
-**MATLAB functionality**
-
-- Dedicated functions for loading, saving, validating and calculating vehicle properties.
-- Each calculation function performs a clearly defined operation.
-- Explicit error reporting when required data are absent or explicitly unknown.
-- Identifiable error identifiers for invalid or unsupported configurations.
-- Automated tests for implemented functionality.
 
 ### 1.2. v0.2 and Future Releases — Deferred Features
 
