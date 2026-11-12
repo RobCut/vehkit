@@ -84,7 +84,7 @@ The currently supported schema version is:
 
 `"0.1"`
 
-The optional vehicle-level `tyre` block is defined in Section 7.4.
+The optional vehicle-level `tyre` block is defined in Section 8.5.
 
 Version handling follows these rules:
 
@@ -201,7 +201,7 @@ For example, the following object is not a tyre parameter block:
 
 `{"geometry":{"parameters":{"Cd":1}}}`
 
-The `tyre.parameters` block is a vehicle-level block and is defined in Section 7.4.
+The `tyre.parameters` block is a vehicle-level block and is defined in Section 8.5.
 
 Its keys follow different rules because tyre model parameter names may contain uppercase characters.
 
@@ -712,9 +712,16 @@ Each field definition specifies:
 
 ### 8.1. Root Fields
 
+The root object contains the following fields.
+
 | Field | Type | Required | Nullable | Constraints |
 |---|---|---|---|---|
 | `schema_version` | string | Yes | No | Must match the version format defined in Section 2 |
+| `geometry` | object | Yes | No | Defined in Section 8.2 |
+| `axles` | collection of objects | Yes | No | Defined in Section 8.3 |
+| `load_configurations` | object | Yes | No | Defined in Section 8.6 |
+| `tyre` | object | No | No | Defined in Section 8.5 |
+| `aerodynamics` | object | No | No | Defined in Section 8.8 |
 
 ### 8.2. Geometry Fields
 
@@ -758,6 +765,152 @@ When two or more wheels have the same `y`, their canonical identifier ordering m
 | `tyre.parameters` | object | Yes, if `tyre` is present | No | Uninterpreted model-specific parameters |
 
 The key and value restrictions for `tyre.parameters` are defined in Section 3.1.
+
+### 8.6. Load Configuration Fields
+
+The `load_configurations` object groups the mass properties of the vehicle under different loading conditions.
+
+| Field | Type | Required | Nullable | Constraints |
+|---|---|---|---|---|
+| `load_configurations` | object | Yes | No | Must follow this section |
+| `load_configurations.reference` | object | Yes | No | Defined in Section 8.6.1 |
+| `load_configurations.alternative` | object | No | No | Defined in Section 8.6.2 |
+
+The reference configuration is the loading condition associated with the global reference frame origin and with `geometry.cg_height`. Its centre of gravity is at the global origin by definition (see `CONVENTIONS.md`, Section 3).
+
+The alternative configuration represents a different loading condition. It is expressed relative to the reference configuration. If absent, the vehicle has only a reference loading condition. At most one alternative configuration is supported.
+
+#### 8.6.1. Reference Load Configuration
+
+| Field | Type | Required | Nullable | Unit | Constraints |
+|---|---|---|---|---|---|
+| `load_configurations.reference.mass` | scalar numeric | Yes | No | kg | Positive |
+| `load_configurations.reference.inertia` | object | Yes | No | — | Defined in Section 8.7 |
+
+`reference.mass` includes the driver and the fuel load, as defined in `CONVENTIONS.md`, Section 3.
+
+`reference.inertia` is referred to the centre of gravity of the reference configuration, with axes parallel to the global reference axes.
+
+#### 8.6.2. Alternative Load Configuration
+
+| Field | Type | Required | Nullable | Unit | Constraints |
+|---|---|---|---|---|---|
+| `load_configurations.alternative.mass` | scalar numeric | Yes, if `alternative` is present | No | kg | Positive |
+| `load_configurations.alternative.cg_offset` | vector, 3 components | Yes, if `alternative` is present | No | m | Each component finite |
+| `load_configurations.alternative.inertia` | object | Yes, if `alternative` is present | No | — | Defined in Section 8.7 |
+
+`alternative.cg_offset` is the displacement of the alternative centre of gravity from the reference centre of gravity, expressed in the global reference frame:
+
+`cg_offset = alternative_cg - reference_cg`
+
+Since the reference centre of gravity is at the global origin, `cg_offset` is numerically equal to the position of the alternative centre of gravity in the global reference frame. This equivalence is a consequence of the definition and must not be treated as an independent property.
+
+`alternative.inertia` is referred to the centre of gravity of the alternative configuration, with axes parallel to the global reference axes.
+
+### 8.7. Inertia Fields
+
+The `inertia` object represents the moment of inertia tensor of a load configuration, expressed in the global reference orientation and referred to the centre of gravity of that configuration. It appears under `load_configurations.reference` and, when present, under `load_configurations.alternative` (see Sections 8.6.1 and 8.6.2).
+
+| Field | Type | Required | Nullable | Unit | Constraints |
+|---|---|---|---|---|---|
+| `inertia.ixx` | scalar numeric | No | Yes | kg·m² | Non-negative if known |
+| `inertia.iyy` | scalar numeric | No | Yes | kg·m² | Non-negative if known |
+| `inertia.izz` | scalar numeric | No | Yes | kg·m² | Non-negative if known |
+| `inertia.ixy` | scalar numeric | No | Yes | kg·m² | Finite if known |
+| `inertia.ixz` | scalar numeric | No | Yes | kg·m² | Finite if known |
+| `inertia.iyz` | scalar numeric | No | Yes | kg·m² | Finite if known |
+
+The six components are the elements of the symmetric inertia tensor:
+
+    I = [ ixx  ixy  ixz ;
+          ixy  iyy  iyz ;
+          ixz  iyz  izz ]
+
+In this convention, `ixy`, `ixz` and `iyz` are the off-diagonal elements of the inertia matrix as directly written in the tensor. They are not the classical products of inertia defined with a negative sign; no sign change is applied when constructing the matrix.
+
+Field names use lowercase letters to comply with the pattern defined in Section 1.4. The physical quantities they represent are the classical `Ixx`, `Iyy`, `Izz`, `Ixy`, `Ixz`, `Iyz`.
+
+#### 8.7.1. Partial Specification
+
+Each of the six components is individually optional and nullable. This supports partially specified inertia tensors:
+
+- A component that is absent is not part of the specification.
+- A component that is present with a known value is part of the specification.
+- A component that is present and explicitly unknown (`null`) is part of the specification as an unknown value.
+- Missing components are not assumed to be zero.
+
+An `inertia` object with none of the six components present is structurally valid. It represents a load configuration whose inertia tensor is entirely unspecified. Functions that require specific inertia components produce `vehkit:missingData` when those components are absent or explicitly unknown.
+
+#### 8.7.2. Physical Validity
+
+Physical validity of the inertia tensor is checked according to the data available, following the rules of `DESIGN.md`, Section 1.1.1:
+
+- A known diagonal component must be non-negative. A negative diagonal component produces `vehkit:invalidInertia`.
+- When all three diagonal components are known, the triangle inequalities must be satisfied within `tol_triangle`. Violations produce `vehkit:invalidInertia`.
+- When all six components are known, positive semidefiniteness must be satisfied within `tol_PSD`. Violations produce `vehkit:invalidInertia`.
+- When fewer than all six components are known, positive semidefiniteness is not checked. The diagonal and triangle checks are still applied whenever the diagonal components they require are known.
+
+The tolerances `tol_triangle` and `tol_PSD` are defined in `DESIGN.md`, Section 1.7.
+
+#### 8.7.3. Serialization
+
+- Known components are serialized as JSON numbers.
+- Unknown components (`NaN` in MATLAB) are serialized as JSON `null`.
+- Absent components remain absent in the serialized JSON document and are not converted to `null`.
+- The distinction between absent and explicitly unknown components is preserved through a full round-trip.
+
+These rules follow from Sections 9.2 and 9.3.
+
+### 8.8. Aerodynamics Fields
+
+The `aerodynamics` object is optional and represents constant-coefficient aerodynamic properties of the vehicle. It is a vehicle-level block and is independent of the selected geometry method.
+
+| Field | Type | Required | Nullable | Unit | Constraints |
+|---|---|---|---|---|---|
+| `aerodynamics` | object | No | No | — | Must follow this section |
+| `aerodynamics.cd` | scalar numeric | No | Yes | — | Finite if known |
+| `aerodynamics.cl` | scalar numeric | No | Yes | — | Finite if known |
+| `aerodynamics.reference_area` | scalar numeric | No | Yes | m² | Positive if known |
+
+#### 8.8.1. Interpretation of the Fields
+
+`aerodynamics.cd` is the dimensionless drag coefficient.
+
+`aerodynamics.cl` is the dimensionless lift coefficient, positive in the positive global vertical direction (`+z`). Negative `cl` corresponds to downforce, as defined in `DESIGN.md`, Section 1.1.2.
+
+`aerodynamics.reference_area` is the reference area used for both drag and lift.
+
+The product `cd * reference_area` (commonly denoted `CdA`) is a derived quantity. It is not stored as an independent field and must not be serialized.
+
+#### 8.8.2. Partial Specification
+
+Each of the three fields is individually optional and nullable. This supports partially specified aerodynamic blocks:
+
+- A field that is absent is not part of the specification.
+- A field that is present with a known value is part of the specification.
+- A field that is present and explicitly unknown (`null`) is part of the specification as an unknown value.
+
+An `aerodynamics` object with none of the three fields present is structurally valid. It represents a vehicle with an entirely unspecified aerodynamic model.
+
+#### 8.8.3. Calculation Requirements
+
+The following requirements apply to aerodynamic calculations and follow from `DESIGN.md`, Section 1.1.2:
+
+- Drag requires `cd` and `reference_area`.
+- Downforce requires `cl` and `reference_area`.
+- Air density and relative airspeed are operational inputs to the aerodynamic calculation functions. They are not vehicle properties and are not stored in the JSON document.
+- A calculation that lacks any of its required fields, whether absent or explicitly unknown, produces `vehkit:missingData`. The error message must distinguish absent from explicitly unknown data.
+
+Missing data for one calculation does not prevent a different calculation that has sufficient input data from succeeding.
+
+#### 8.8.4. Serialization
+
+- Known fields are serialized as JSON numbers.
+- Unknown fields (`NaN` in MATLAB) are serialized as JSON `null`.
+- Absent fields remain absent in the serialized JSON document and are not converted to `null`.
+- The distinction between absent and explicitly unknown fields is preserved through a full round-trip.
+
+These rules follow from Sections 9.2 and 9.3.
 
 ---
 
