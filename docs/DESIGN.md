@@ -284,48 +284,91 @@ Additional identifiers may be introduced when required by specific validation fu
 
 ### 1.6. v0.1 Completion Criteria
 
-The initial release will be considered complete when:
+The initial release is considered complete when both sets of criteria below are satisfied.
 
-- The two reference vehicle definitions can be loaded successfully.
-- Both vehicle definitions pass structural and physical validation.
-- Invalid vehicle definitions are rejected with identifiable error messages.
-- Geometry validation correctly distinguishes between direct and static-load-based methods.
-- Conflicting geometry parameters produce `vehkit:conflictingGeometryDefinition`.
-- Static-load-based geometry calculations work for two-axle vehicles.
-- Static-load-based geometry definitions and static equilibrium calculations reject vehicles with unsupported axle configurations with `vehkit:unsupportedAxleCount`.
-- Direct geometry supports vehicles with more than two axles.
-- Wheel ordering within each axle is verified and invalid ordering produces `vehkit:wheelOrderMismatch`.
-- Wheel longitudinal positions are correctly inherited from their corresponding axles.
-- Derived geometric properties agree with independently calculated reference values.
-- A two-axle reference vehicle can be defined using both geometry methods with consistent input data.
-- Axle ordering is verified for the `direct` geometry method, and invalid ordering produces `vehkit:axleOrderMismatch`.
-- Axle ordering in the `static_load_based` geometry method is accepted as declared by the axle structure.
-- The derived axle positions and geometric properties obtained through the `direct` and `static_load_based` methods agree within the specified numerical tolerance.
-- All numerical comparisons and inertia validation checks use the tolerances defined in Section 1.7.
-- Inertia validation behaves correctly for complete and partially specified tensors.
-- Triangle inequalities on the diagonal components are verified whenever the complete diagonal is available, using the defined inertia tolerance.
-- Positive semidefiniteness is verified for complete inertia tensors using the specified eigenvalue tolerance.
-- Invalid inertia properties produce `vehkit:invalidInertia`.
-- Invalid parameter values and out-of-range values produce `vehkit:invalidParameter`.
-- At least one test verifies the handling of missing required data.
-- Alternative load configurations correctly preserve the assigned CG displacement and inertia reference.
-- Static axle loads are correctly calculated for supported two-axle configurations.
-- No individual wheel loads are derived in v0.1.
-- JSON loading, saving and reloading preserve all assigned data within the specified numerical tolerance.
-- Round-trip tests verify that absent, explicitly unknown and zero-valued data remain distinct.
-- Schema version validation is tested:
-  - Supported schema versions are loaded successfully.
-  - Formally valid but unsupported versions produce `vehkit:unsupportedSchemaVersion`.
-  - Missing or malformed schema versions produce `vehkit:invalidJSONStructure`.
-- Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
-- Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
-- The minimal constant-coefficient aerodynamic implementation passes its tests.
-- Aerodynamic force direction is verified for both positive and negative lift coefficients.
-- `DATA.md` documents the sources and references used for both reference vehicles.
-- `README.md` provides an introduction to the project and includes an image illustrating the results.
-- The project build tool (`buildtool`) executes successfully.
-- The automated test suite passes successfully.
-- Calculations requiring explicitly unknown data produce `vehkit:missingData`, with an error message distinguishing unknown data from absent data.
+#### 1.6.1. Alpha exit criteria
+
+1. Two reference JSON files (`road_car.json`, `race_car.json`) are stored in the repository and are the canonical examples referenced by the test suite.
+
+2. The two reference vehicle definitions can be loaded successfully.
+
+3. Both reference vehicle definitions pass structural validation and the physical validation checks available in alpha: mass and inertia, geometry (`direct` only), axle ordering and wheel ordering.
+
+4. Invalid vehicle definitions are rejected with identifiable error messages, using only the error identifiers defined in §1.5 that are reachable in alpha.
+
+5. A JSON document declaring `geometry.method = "static_load_based"` is rejected in alpha with `vehkit:invalidParameter`, because the accepted enum in alpha is `{ "direct" }`.
+
+6. Conflicting geometry parameters in `direct` (`geometry.wheelbase` or `geometry.front_weight_distribution` present) produce `vehkit:conflictingGeometryDefinition`.
+
+7. Direct geometry supports vehicles with more than two axles.
+
+8. Wheel ordering within each axle is verified, and invalid ordering produces `vehkit:wheelOrderMismatch`.
+
+9. Wheel longitudinal positions are correctly inherited from their corresponding axle.
+
+10. Derived geometric properties (wheelbase, track widths, CG-to-axle distances, wheel-centre positions) agree with independently calculated reference values.
+
+11. Axle ordering is verified for the `direct` geometry method, and invalid ordering produces `vehkit:axleOrderMismatch`.
+
+12. Inertia validation behaves correctly for complete and partially specified tensors.
+
+13. Triangle inequalities on the diagonal components are verified whenever the complete diagonal is available, using `tol_triangle`.
+
+14. Positive semidefiniteness is verified for complete inertia tensors using `tol_PSD`.
+
+15. Invalid inertia properties produce `vehkit:invalidInertia`.
+
+16. Invalid parameter values and out-of-range values produce `vehkit:invalidParameter`.
+
+17. At least one test verifies the handling of missing required data, distinguishing absent from explicitly unknown data.
+
+18. JSON loading, saving and reloading preserve all assigned data within the tolerances of §1.7.
+
+19. Round-trip tests verify that absent, explicitly unknown and zero-valued data remain distinct after reload.
+
+20. Schema version validation is tested: supported versions are loaded successfully; formally valid but unsupported versions produce `vehkit:unsupportedSchemaVersion`; missing or malformed versions produce `vehkit:invalidJSONStructure`.
+
+21. Calculations requiring explicitly unknown data produce `vehkit:missingData`, with a message distinguishing unknown data from absent data.
+
+22. The optional `tyre` block is loaded and preserved as-is, including in the round-trip.
+
+23. `DATA.md` documents the sources and references used for both reference vehicles.
+
+24. `README.md` provides an introduction to the project and includes an image illustrating the results.
+
+25. The project build tool (`buildtool`) executes successfully.
+
+26. The automated test suite passes successfully.
+
+#### 1.6.2. v0.1 release criteria (additional to alpha)
+
+1. `geometry.method = "static_load_based"` is accepted and validated.
+
+2. The two geometry methods are mutually exclusive: `direct` and `static_load_based` cannot be mixed; a `static_load_based` definition with `axles[].x` present produces `vehkit:conflictingGeometryDefinition`.
+
+3. Static-load-based geometry calculations work for two-axle vehicles.
+
+4. Static-load-based geometry definitions and static equilibrium calculations reject vehicles with an axle count different from two with `vehkit:unsupportedAxleCount`.
+
+5. A two-axle reference vehicle can be defined using both geometry methods with consistent input data.
+
+6. The derived axle positions and geometric properties obtained through `direct` and `static_load_based` agree within the tolerances of §1.7.
+
+7. Axle ordering in the `static_load_based` geometry method is accepted as declared by the axle structure.
+
+8. Alternative load configurations preserve the assigned CG displacement and inertia reference.
+
+9. Static axle loads are correctly calculated for supported two-axle configurations, using `g = 9.80665 m/s^2`.
+
+10. No function provided in v0.1 derives individual wheel loads.
+
+11. Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
+
+12. Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
+
+13. The minimal constant-coefficient aerodynamic implementation passes its tests.
+
+14. Aerodynamic force direction is verified for both positive and negative lift coefficients.
 
 ### 1.7. Numerical Tolerances
 
