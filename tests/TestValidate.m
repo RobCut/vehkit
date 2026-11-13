@@ -188,5 +188,32 @@ classdef TestValidate < matlab.unittest.TestCase
             v.axles{1}.wheels{1}.loaded_radius = 0;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
+
+        function test_validate_geometry_method_unsupported(testCase)
+            %test_validate_geometry_method_unsupported Verify that a
+            %   static_load_based geometry method produces
+            %   vehkit:invalidParameter in alpha.
+            v = testCase.ValidVehicle;
+            v.geometry.method = 'static_load_based';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_geometry_wheelbase_conflict(testCase)
+            %test_validate_geometry_wheelbase_conflict Verify that a
+            %   wheelbase field with direct geometry produces
+            %   vehkit:conflictingGeometryDefinition.
+            v = testCase.ValidVehicle;
+            v.geometry.wheelbase = 2.6;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:conflictingGeometryDefinition');
+        end
+
+        function test_validate_geometry_front_weight_distribution_conflict(testCase)
+            %test_validate_geometry_front_weight_distribution_conflict Verify
+            %   that a front_weight_distribution field with direct geometry
+            %   produces vehkit:conflictingGeometryDefinition.
+            v = testCase.ValidVehicle;
+            v.geometry.front_weight_distribution = 0.5;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:conflictingGeometryDefinition');
+        end
     end
 end

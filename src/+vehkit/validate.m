@@ -19,6 +19,7 @@ validateRootFields(vehicle);
 vehicle = normalizeCollections(vehicle);
 validateNullability(vehicle);
 validatePositiveScalars(vehicle);
+validateGeometry(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -156,6 +157,30 @@ for k = 1:numel(vehicle.axles)
 end
 end
 
+function validateGeometry(vehicle)
+%validateGeometry Validate geometry.method and method-exclusive fields.
+if ~isfield(vehicle.geometry, 'method')
+    throwInvalidJSON('Missing required field: geometry.method');
+end
+method = vehicle.geometry.method;
+if ~(ischar(method) || isstring(method))
+    throwInvalidJSON('geometry.method must be a string');
+end
+method = string(method);
+if method ~= "direct"
+    throwInvalidParameter(sprintf( ...
+        'geometry.method "%s" is not supported in alpha', method));
+end
+if isfield(vehicle.geometry, 'wheelbase')
+    throwConflictingGeometry( ...
+        'geometry.wheelbase is not allowed with method "direct"');
+end
+if isfield(vehicle.geometry, 'front_weight_distribution')
+    throwConflictingGeometry( ...
+        'geometry.front_weight_distribution is not allowed with method "direct"');
+end
+end
+
 function throwInvalidJSON(msg)
 %throwInvalidJSON Throw a vehkit:invalidJSONStructure exception.
 throw(MException('vehkit:invalidJSONStructure', '%s', msg));
@@ -171,4 +196,10 @@ end
 function throwInvalidParameter(msg)
 %throwInvalidParameter Throw a vehkit:invalidParameter exception.
 throw(MException('vehkit:invalidParameter', '%s', msg));
+end
+
+function throwConflictingGeometry(msg)
+%throwConflictingGeometry Throw a vehkit:conflictingGeometryDefinition
+%   exception.
+throw(MException('vehkit:conflictingGeometryDefinition', '%s', msg));
 end
