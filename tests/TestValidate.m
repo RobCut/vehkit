@@ -5,6 +5,7 @@ classdef TestValidate < matlab.unittest.TestCase
 
     properties
         ValidVehicle
+        SingleAxleVehicle
     end
 
     methods (TestClassSetup)
@@ -13,6 +14,8 @@ classdef TestValidate < matlab.unittest.TestCase
             here = fileparts(mfilename('fullpath'));
             fixture = fullfile(here, 'fixtures', 'minimal_valid.json');
             testCase.ValidVehicle = vehkit.load(fixture);
+            fixture = fullfile(here, 'fixtures', 'minimal_single_axle.json');
+            testCase.SingleAxleVehicle = vehkit.load(fixture);
         end
     end
 
@@ -99,6 +102,18 @@ classdef TestValidate < matlab.unittest.TestCase
             v = testCase.ValidVehicle;
             v.load_configurations = 1;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_normalizes_single_axle(testCase)
+            %test_validate_normalizes_single_axle Verify that a vehicle
+            %   with a single axle is normalized to a 1x1 cell array of
+            %   structs
+            v = testCase.SingleAxleVehicle;
+            v = vehkit.validate(v);
+            testCase.verifyTrue(iscell(v.axles));
+            testCase.verifyEqual(numel(v.axles), 1);
+            testCase.verifyTrue(isstruct(v.axles{1}));
+            testCase.verifyTrue(isscalar(v.axles{1}));
         end
     end
 end

@@ -1,4 +1,4 @@
-function validate(vehicle)
+function vehicle = validate(vehicle)
 %VALIDATE Check that a vehicle struct complies with the vehkit schema.
 %   VALIDATE(VEHICLE) verifies that VEHICLE satisfies the structural and
 %   physical constraints of the vehkit schema. It returns nothing on
@@ -15,6 +15,7 @@ end
 
 validateSchemaVersion(vehicle);
 validateRootFields(vehicle);
+vehicle = normalizeCollections(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -65,6 +66,52 @@ if ~isfield(vehicle, 'load_configurations')
 end
 if ~isstruct(vehicle.load_configurations)
     throwInvalidJSON('load_configurations must be a struct');
+end
+end
+
+function vehicle = normalizeCollections(vehicle)
+%normalizeCollections Normalize vehicle collections to canonical form.
+%   After this function, vehicle.axles is a column cell array of scalar
+%   structs, and each axle.wheels is a column cell array of scalar structs.
+vehicle.axles = normalizeCollection(vehicle.axles);
+if isempty(vehicle.axles)
+    throwInvalidJSON('axles must contain at least one axle');
+end
+for k = 1:numel(vehicle.axles)
+    axle = vehicle.axles{k};
+    if ~isstruct(axle) || ~isscalar(axle)
+        throwInvalidJSON('Each axle must be a scalar struct');
+    end
+    if ~isfield(axle, 'wheels')
+        throwInvalidJSON('Missing required field: wheels');
+    end
+    axle.wheels = normalizeCollection(axle.wheels);
+    if isempty(axle.wheels)
+        throwInvalidJSON('Each axle must contain at least one wheel');
+    end
+    for j = 1:numel(axle.wheels)
+        wheel = axle.wheels{j};
+        if ~isstruct(wheel) || ~isscalar(wheel)
+            throwInvalidJSON('Each wheel must be a scalar struct');
+        end
+    end
+    vehicle.axles{k} = axle;
+end
+end
+
+function c = normalizeCollection(x)
+%normalizeCollection Convert a collection to a column cell array
+if iscell(x)
+    c = x(:);
+elseif isstruct(x)
+    if isscalar(x)
+        c = {x};
+    else
+        c = num2cell(x);
+        c = c(:);
+    end
+else
+    throwInvalidJSON('Collection must be a cell array or a struct');
 end
 end
 
