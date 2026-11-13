@@ -11,9 +11,7 @@ classdef TestLoader < matlab.unittest.TestCase
             %   fields.
             here = fileparts(mfilename('fullpath'));
             fixture = fullfile(here, 'fixtures', 'minimal_valid.json');
-
             vehicle = vehkit.load(fixture);
-
             testCase.verifyEqual(vehicle.schema_version, '0.1');
             testCase.verifyEqual(vehicle.geometry.method, 'direct');
         end
@@ -23,7 +21,6 @@ classdef TestLoader < matlab.unittest.TestCase
             %   native MATLAB error rather than a vehkit error.
             here = fileparts(mfilename('fullpath'));
             missingFile = fullfile(here, 'fixtures', 'does_not_exist.json');
-
             testCase.verifyError( ...
                 @() vehkit.load(missingFile), ...
                 'MATLAB:fileread:cannotOpenFile');
@@ -34,7 +31,6 @@ classdef TestLoader < matlab.unittest.TestCase
             %   vehkit:invalidJSONStructure.
             here = fileparts(mfilename('fullpath'));
             badFile = fullfile(here, 'fixtures', 'invalid_syntax.json');
-
             testCase.verifyError( ...
                 @() vehkit.load(badFile), ...
                 'vehkit:invalidJSONStructure');

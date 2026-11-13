@@ -232,5 +232,24 @@ classdef TestValidate < matlab.unittest.TestCase
             v.axles{1}.wheels = v.axles{1}.wheels([2 1]);
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:wheelOrderMismatch');
         end
+
+        function test_validate_wheel_same_y_wrong_canonical(testCase)
+            %test_validate_wheel_same_y_wrong_canonical Verify that two
+            %   wheels with the same y must be ordered by canonical id.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.y = 0.75;
+            v.axles{1}.wheels{2}.y = 0.75;
+            v.axles{1}.wheels = v.axles{1}.wheels([2 1]);
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:wheelOrderMismatch');
+        end
+
+        function test_validate_wheel_same_y_correct_canonical(testCase)
+            %test_validate_wheel_same_y_correct_canonical Verify that two
+            %   wheels with the same y and canonical id order are accepted.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.y = 0.75;
+            v.axles{1}.wheels{2}.y = 0.75;
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
     end
 end

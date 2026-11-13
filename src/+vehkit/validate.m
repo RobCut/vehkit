@@ -188,9 +188,44 @@ for k = 1:numel(vehicle.axles)
             throwWheelOrderMismatch(sprintf( ...
                 'wheels in axles{%d} must be ordered left to right: wheels{%d}.y (%g) < wheels{%d}.y (%g)', ...
                 k, j-1, wheels{j-1}.y, j, wheels{j}.y));
+        elseif wheels{j-1}.y == wheels{j}.y
+            if compareCanonicalIds(wheels{j-1}.id, wheels{j}.id) > 0
+                throwWheelOrderMismatch(sprintf( ...
+                    'wheels in axles{%d} with identical y must be in canonical id order: %s before %s', ...
+                    k, wheels{j}.id, wheels{j-1}.id));
+            end
         end
     end
 end
+end
+
+function cmp = compareCanonicalIds(a, b)
+%compareCanonicalIds Compare two identifiers by canonical ordering.
+%   Returns -1 if A precedes B, 0 if equal, 1 if A follows B.
+%   Canonical ordering compares the prefix before the last underscore using
+%   ordinal ASCII, and the numeric suffix as an integer.
+[pa, na] = splitCanonicalId(a);
+[pb, nb] = splitCanonicalId(b);
+if pa < pb
+    cmp = -1;
+elseif pa > pb
+    cmp = 1;
+elseif na < nb
+    cmp = -1;
+elseif na > nb
+    cmp = 1;
+else
+    cmp = 0;
+end
+end
+
+function [prefix, num] = splitCanonicalId(s)
+%splitCanonicalId Split an identifier into textual prefix and numeric
+%   suffix.
+s = string(s);
+parts = split(s, '_');
+num = str2double(parts(end));
+prefix = strjoin(parts(1:end-1), '_');
 end
 
 function throwInvalidJSON(msg)

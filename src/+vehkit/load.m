@@ -13,9 +13,7 @@ arguments
 end
 
 filename = string(filename);
-
 text = fileread(filename);
-
 try
     vehicle = jsondecode(text);
 catch cause
