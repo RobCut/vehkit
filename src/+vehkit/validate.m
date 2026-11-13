@@ -14,6 +14,7 @@ arguments
 end
 
 validateSchemaVersion(vehicle);
+validateRootFields(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -42,6 +43,28 @@ end
 
 if sv ~= "0.1"
     throwUnsupportedSchemaVersion(sv);
+end
+end
+
+function validateRootFields(vehicle)
+%validateRootFields Validate presence and type of required root fields.
+
+if ~isfield(vehicle, 'geometry')
+    throwInvalidJSON('Missing required field: geometry');
+end
+if ~isstruct(vehicle.geometry)
+    throwInvalidJSON('geometry must be a struct');
+end
+
+if ~isfield(vehicle, 'axles')
+    throwInvalidJSON('Missing required field: axles');
+end
+
+if ~isfield(vehicle, 'load_configurations')
+    throwInvalidJSON('Missing required field: load_configurations');
+end
+if ~isstruct(vehicle.load_configurations)
+    throwInvalidJSON('load_configurations must be a struct');
 end
 end
 

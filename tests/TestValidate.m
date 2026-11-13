@@ -58,5 +58,47 @@ classdef TestValidate < matlab.unittest.TestCase
             v = testCase.ValidVehicle;
             testCase.verifyWarningFree(@() vehkit.validate(v));
         end
+
+        function test_validate_geometry_missing(testCase)
+            %test_validate_geometry_missing Verify that a missing geometry
+            %   field produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v = rmfield(v, 'geometry');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_geometry_wrong_type(testCase)
+            %test_validate_geometry_wrong_type Verify that a non-struct
+            %   geometry field produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.geometry = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_axles_missing(testCase)
+            %test_validate_axles_missing Verify that a missing axles field
+            %   produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v = rmfield(v, 'axles');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_load_configurations_missing(testCase)
+            %test_validate_load_configurations_missing Verify that a
+            %   missing load_configurations field produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v = rmfield(v, 'load_configurations');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_load_configurations_wrong_type(testCase)
+            %test_validate_load_configurations_wrong_type Verify that a
+            %   non-struct load_configurations field produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
     end
 end
