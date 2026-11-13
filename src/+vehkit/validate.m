@@ -18,6 +18,7 @@ validateSchemaVersion(vehicle);
 validateRootFields(vehicle);
 vehicle = normalizeCollections(vehicle);
 validateNullability(vehicle);
+validatePositiveScalars(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -132,6 +133,24 @@ for k = 1:numel(vehicle.axles)
         if isnan(wheel.y)
             throwInvalidParameter(sprintf( ...
                 'axles{%d}.wheels{%d}.y must not be NaN', k, j));
+        end
+    end
+end
+end
+
+function validatePositiveScalars(vehicle)
+%validatePositiveScalars Verify that strictly positive scalars are
+%   positive.
+if vehicle.load_configurations.reference.mass <= 0
+    throwInvalidParameter('mass must be positive');
+end
+for k = 1:numel(vehicle.axles)
+    axle = vehicle.axles{k};
+    for j = 1:numel(axle.wheels)
+        lr = axle.wheels{j}.loaded_radius;
+        if ~isnan(lr) && lr <= 0
+            throwInvalidParameter(sprintf( ...
+                'axles{%d}.wheels{%d}.loaded_radius must be positive', k, j));
         end
     end
 end

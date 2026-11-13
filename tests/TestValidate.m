@@ -163,5 +163,30 @@ classdef TestValidate < matlab.unittest.TestCase
             v.axles{1}.wheels{1}.y = NaN;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
+
+        function test_validate_mass_negative(testCase)
+            %test_validate_mass_negative Verify that a negative mass
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.mass = -100;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_mass_zero(testCase)
+            %test_validate_mass_zero Verify that zero mass produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.mass = 0;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_loaded_radius_zero(testCase)
+            %test_validate_loaded_radius_zero Verify that a zero
+            %   loaded_radius (known value) produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.loaded_radius = 0;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
     end
 end
