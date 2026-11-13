@@ -21,6 +21,7 @@ validateNullability(vehicle);
 validatePositiveScalars(vehicle);
 validateGeometry(vehicle);
 validateOrdering(vehicle);
+validateIdentifiers(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -195,6 +196,53 @@ for k = 1:numel(vehicle.axles)
                     k, wheels{j}.id, wheels{j-1}.id));
             end
         end
+    end
+end
+end
+
+function validateIdentifiers(vehicle)
+%validateIdentifiers Validate identifiers format and global uniqueness.
+pattern = '^[a-z]+(?:_[a-z]+)*_[1-9][0-9]*$';
+axleIds = strings(0,1);
+wheelIds = strings(0,1);
+for k = 1:numel(vehicle.axles)
+    axle = vehicle.axles{k};
+    if ~isfield(axle, 'id')
+        throwInvalidJSON(sprintf('Missing required field: axles{%d}.id', k));
+    end
+    if ~(ischar(axle.id) || isstring(axle.id))
+        throwInvalidJSON(sprintf('axles{%d}.id must be a string', k));
+    end
+    id = string(axle.id);
+    if isempty(regexp(id, pattern, 'once'))
+        throwInvalidParameter(sprintf( ...
+            'axles{%d}.id has invalid format: %s', k, id));
+    end
+    if ismember(id, axleIds)
+        throwInvalidParameter(sprintf( ...
+            'Duplicate axle id: %s', id));
+    end
+    axleIds(end+1) = id;
+    for j = 1:numel(axle.wheels)
+        wheel = axle.wheels{j};
+        if ~isfield(wheel, 'id')
+            throwInvalidJSON(sprintf( ...
+                'Missing required field: axles{%d}.wheels{%d}.id', k, j));
+        end
+        if ~(ischar(wheel.id) || isstring(wheel.id))
+            throwInvalidJSON(sprintf( ...
+                'axles{%d}.wheels{%d}.id must be a string', k, j));
+        end
+        wid = string(wheel.id);
+        if isempty(regexp(wid, pattern, 'once'))
+            throwInvalidParameter(sprintf( ...
+                'axles{%d}.wheels{%d}.id has invalid format: %s', k, j, wid));
+        end
+        if ismember(wid, wheelIds)
+            throwInvalidParameter(sprintf( ...
+                'Duplicate wheel id: %s', wid));
+        end
+        wheelIds(end+1) = wid;
     end
 end
 end

@@ -251,5 +251,39 @@ classdef TestValidate < matlab.unittest.TestCase
             v.axles{1}.wheels{2}.y = 0.75;
             testCase.verifyWarningFree(@() vehkit.validate(v));
         end
+
+        function test_validate_axle_id_invalid_format(testCase)
+            %test_validate_axle_id_invalid_format Verify that an axle id
+            %   that does not match the canonical pattern produces
+            %   vehkit:invalidParameter
+            v = testCase.ValidVehicle;
+            v.axles{1}.id = 'Axle_1';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_wheel_id_invalid_format(testCase)
+            %test_validate_wheel_id_invalid_format Verify that a wheel id
+            %   that does not match the canonical pattern produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.id = 'wheel_0';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_axle_id_duplicate(testCase)
+            %test_validate_axle_id_duplicate Verify that duplicate axle
+            %   ids produce vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{2}.id = v.axles{1}.id;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_wheel_id_duplicate(testCase)
+            %test_validate_wheel_id_duplicate Verify that duplicate wheel
+            %   ids produce vehkit:invalidParameter, even across axles.
+            v = testCase.ValidVehicle;
+            v.axles{2}.wheels{1}.id = v.axles{1}.wheels{1}.id;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
     end
 end
