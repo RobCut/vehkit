@@ -13,7 +13,7 @@ classdef TestValidate < matlab.unittest.TestCase
             %loadFixture Load the canonical fixture once for all tests.
             here = fileparts(mfilename('fullpath'));
             fixture = fullfile(here, 'fixtures', 'minimal_valid.json');
-            testCase.ValidVehicle = vehkit.load(fixture);
+            testCase.ValidVehicle = vehkit.validate(vehkit.load(fixture));
             fixture = fullfile(here, 'fixtures', 'minimal_single_axle.json');
             testCase.SingleAxleVehicle = vehkit.load(fixture);
         end
@@ -107,13 +107,61 @@ classdef TestValidate < matlab.unittest.TestCase
         function test_validate_normalizes_single_axle(testCase)
             %test_validate_normalizes_single_axle Verify that a vehicle
             %   with a single axle is normalized to a 1x1 cell array of
-            %   structs
+            %   structs.
             v = testCase.SingleAxleVehicle;
             v = vehkit.validate(v);
             testCase.verifyTrue(iscell(v.axles));
             testCase.verifyEqual(numel(v.axles), 1);
             testCase.verifyTrue(isstruct(v.axles{1}));
             testCase.verifyTrue(isscalar(v.axles{1}));
+        end
+
+        function test_validate_nullable_cg_height_nan(testCase)
+            %test_validate_nullable_cg_height_nan Verify that NaN in
+            %   cg_height (nullable) is accepted.
+            v = testCase.ValidVehicle;
+            v.geometry.cg_height = NaN;
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_nullable_loaded_radius_nan(testCase)
+            %test_validate_nullable_loaded_radius_nan Verify that NaN in a
+            %   wheel's loaded_radius (nullable) is accepted.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.loaded_radius = NaN;
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_nullable_inertia_nan(testCase)
+            %test_validate_nullable_inertia_nan Verify that NaN in an
+            %   inertia component (nullable) is accepted.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.inertia.ixx = NaN;
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_non_nullable_mass_nan(testCase)
+            %test_validate_non_nullable_mass_nan Verify that NaN in mass
+            %   (non-nullable) produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.mass = NaN;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_non_nullable_axle_x_nan(testCase)
+            %test_validate_non_nullable_axle_x_nan Verify that NaN in an
+            %   axle's x (non-nullable) produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{1}.x = NaN;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_non_nullable_wheel_y_nan(testCase)
+            %test_validate_non_nullable_wheel_y_nan Verify that NaN in a
+            %   wheel's y (non-nullable) produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.y = NaN;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
     end
 end

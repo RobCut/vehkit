@@ -1,8 +1,9 @@
 function vehicle = validate(vehicle)
 %VALIDATE Check that a vehicle struct complies with the vehkit schema.
 %   VALIDATE(VEHICLE) verifies that VEHICLE satisfies the structural and
-%   physical constraints of the vehkit schema. It returns nothing on
-%   success, and throws a vehkit:* exception on failure.
+%   physical constraints of the vehkit schema, normalizes its collections
+%   to canonical form, and returns the normalized vehicle. It throws a
+%   vehkit:* exception on failure.
 %
 %   The validation rules are applied in the order defined in
 %   docs/SCHEMA.md, Section 3.5.
@@ -16,6 +17,7 @@ end
 validateSchemaVersion(vehicle);
 validateRootFields(vehicle);
 vehicle = normalizeCollections(vehicle);
+validateNullability(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -100,7 +102,7 @@ end
 end
 
 function c = normalizeCollection(x)
-%normalizeCollection Convert a collection to a column cell array
+%normalizeCollection Convert a collection to a column cell array.
 if iscell(x)
     c = x(:);
 elseif isstruct(x)
@@ -115,6 +117,26 @@ else
 end
 end
 
+function validateNullability(vehicle)
+%validateNullability Verify that NaN appears only in nullable fields.
+if isnan(vehicle.load_configurations.reference.mass)
+    throwInvalidParameter('mass must not be NaN');
+end
+for k = 1:numel(vehicle.axles)
+    axle = vehicle.axles{k};
+    if isnan(axle.x)
+        throwInvalidParameter(sprintf('axles{%d}.x must not be NaN', k));
+    end
+    for j = 1:numel(axle.wheels)
+        wheel = axle.wheels{j};
+        if isnan(wheel.y)
+            throwInvalidParameter(sprintf( ...
+                'axles{%d}.wheels{%d}.y must not be NaN', k, j));
+        end
+    end
+end
+end
+
 function throwInvalidJSON(msg)
 %throwInvalidJSON Throw a vehkit:invalidJSONStructure exception.
 throw(MException('vehkit:invalidJSONStructure', '%s', msg));
@@ -122,7 +144,12 @@ end
 
 function throwUnsupportedSchemaVersion(sv)
 %throwUnsupportedSchemaVersion Throw a vehkit:unsupportedSchemaVersion
-%   exception
+%   exception.
 throw(MException('vehkit:unsupportedSchemaVersion', ...
     'Unsupported schema version: %s', sv));
+end
+
+function throwInvalidParameter(msg)
+%throwInvalidParameter Throw a vehkit:invalidParameter exception.
+throw(MException('vehkit:invalidParameter', '%s', msg));
 end
