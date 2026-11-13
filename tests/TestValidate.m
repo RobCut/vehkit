@@ -285,5 +285,52 @@ classdef TestValidate < matlab.unittest.TestCase
             v.axles{2}.wheels{1}.id = v.axles{1}.wheels{1}.id;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
+
+        function test_validate_inertia_diagonal_negative(testCase)
+            %test_validate_inertia_diagonal_negative Verify that a negative
+            %   diagonal inertia component produces vehkit:invalidInertia.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.inertia.ixx = -1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidInertia');
+        end
+
+        function test_validate_inertia_triangle_violation(testCase)
+            %test_validate_inertia_triangle_violation Verify that a
+            %   complete diagonal that violates the triangle inequalities
+            %   produces vehkit:invalidInertia.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.inertia.ixx = 1;
+            v.load_configurations.reference.inertia.iyy = 1;
+            v.load_configurations.reference.inertia.izz = 100;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidInertia');
+        end
+
+        function test_validate_inertia_psd_violation(testCase)
+            %test_validate_inertia_psd_violation Verify that a complete
+            %   inertia tensor that is not positive semidefinite produces
+            %   vehkit:invalidInertia.
+            v = testCase.ValidVehicle;
+            inertia = v.load_configurations.reference.inertia;
+            inertia.ixx = 1;
+            inertia.iyy = 1;
+            inertia.izz = 1;
+            inertia.ixy = 100;
+            inertia.ixz = 0;
+            inertia.iyz = 0;
+            v.load_configurations.reference.inertia = inertia;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidInertia');
+        end
+
+        function test_validate_inertia_full_tensor_valid(testCase)
+            %test_validate_inertia_full_tensor_valid Verify that a
+            %   complete, physically valid inertia tensor is accepted.
+            v = testCase.ValidVehicle;
+            inertia = v.load_configurations.reference.inertia;
+            inertia.ixx = 0;
+            inertia.iyy = 0;
+            inertia.izz = 0;
+            v.load_configurations.reference.inertia = inertia;
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
     end
 end

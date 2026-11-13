@@ -22,6 +22,7 @@ validatePositiveScalars(vehicle);
 validateGeometry(vehicle);
 validateOrdering(vehicle);
 validateIdentifiers(vehicle);
+validateInertia(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -200,6 +201,35 @@ for k = 1:numel(vehicle.axles)
 end
 end
 
+function cmp = compareCanonicalIds(a, b)
+%compareCanonicalIds Compare two identifiers by canonical ordering.
+%   Returns -1 if A precedes B, 0 if equal, 1 if A follows B.
+%   Canonical ordering compares the prefix before the last underscore using
+%   ordinal ASCII, and the numeric suffix as an integer.
+[pa, na] = splitCanonicalId(a);
+[pb, nb] = splitCanonicalId(b);
+if pa < pb
+    cmp = -1;
+elseif pa > pb
+    cmp = 1;
+elseif na < nb
+    cmp = -1;
+elseif na > nb
+    cmp = 1;
+else
+    cmp = 0;
+end
+end
+
+function [prefix, num] = splitCanonicalId(s)
+%splitCanonicalId Split an identifier into textual prefix and numeric
+%   suffix.
+s = string(s);
+parts = split(s, '_');
+num = str2double(parts(end));
+prefix = strjoin(parts(1:end-1), '_');
+end
+
 function validateIdentifiers(vehicle)
 %validateIdentifiers Validate identifiers format and global uniqueness.
 pattern = '^[a-z]+(?:_[a-z]+)*_[1-9][0-9]*$';
@@ -247,33 +277,64 @@ for k = 1:numel(vehicle.axles)
 end
 end
 
-function cmp = compareCanonicalIds(a, b)
-%compareCanonicalIds Compare two identifiers by canonical ordering.
-%   Returns -1 if A precedes B, 0 if equal, 1 if A follows B.
-%   Canonical ordering compares the prefix before the last underscore using
-%   ordinal ASCII, and the numeric suffix as an integer.
-[pa, na] = splitCanonicalId(a);
-[pb, nb] = splitCanonicalId(b);
-if pa < pb
-    cmp = -1;
-elseif pa > pb
-    cmp = 1;
-elseif na < nb
-    cmp = -1;
-elseif na > nb
-    cmp = 1;
-else
-    cmp = 0;
+function validateInertia(vehicle)
+%validateInertia Validate the inertia tensor.
+if ~isfield(vehicle.load_configurations.reference, 'inertia')
+    throwInvalidJSON('Missing required field: load_configurations.reference.inertia');
+end
+inertia = vehicle.load_configurations.reference.inertia;
+if ~isstruct(inertia) || ~isscalar(inertia)
+    throwInvalidJSON('load_configurations.reference.inertia must be a struct');
+end
+ixx = getInertiaComponent(inertia, 'ixx');
+iyy = getInertiaComponent(inertia, 'iyy');
+izz = getInertiaComponent(inertia, 'izz');
+ixy = getInertiaComponent(inertia, 'ixy');
+ixz = getInertiaComponent(inertia, 'ixz');
+iyz = getInertiaComponent(inertia, 'iyz');
+for pair = {'ixx', ixx; 'iyy', iyy; 'izz', izz}'
+    name = pair{1};
+    val = pair{2};
+    if ~isnan(val) && val < 0
+        throwInvalidInertia(sprintf('%s must be non-negative', name));
+    end
+end
+if ~isnan(ixx) && ~isnan(iyy) && ~isnan(izz)
+    atol = 1e-10;
+    rtol = 1e-8;
+    tol_triangle = atol + rtol * norm(diag([ixx iyy izz]), 2);
+    if (ixx + iyy - izz) < -tol_triangle
+        throwInvalidInertia('triangle inequality violated: ixx + iyy < izz');
+    end
+    if (ixx + izz - iyy) < -tol_triangle
+        throwInvalidInertia('triangle inequality violated: ixx + izz < iyy');
+    end
+    if (iyy + izz - ixx) < -tol_triangle
+        throwInvalidInertia('triangle inequality violated: iyy + izz < ixx');
+    end
+end
+if ~isnan(ixx) && ~isnan(iyy) && ~isnan(izz) && ...
+        ~isnan(ixy) && ~isnan(ixz) && ~isnan(iyz)
+    I = [ixx ixy ixz;
+        ixy iyy iyz;
+        ixz iyz izz];
+    atol = 1e-10;
+    rtol = 1e-8;
+    tol_PSD = atol + rtol * norm(I,2);
+    lambda = eig(I);
+    if min(lambda) < -tol_PSD
+        throwInvalidInertia('inertia tensor is not positive semidefinite');
+    end
 end
 end
 
-function [prefix, num] = splitCanonicalId(s)
-%splitCanonicalId Split an identifier into textual prefix and numeric
-%   suffix.
-s = string(s);
-parts = split(s, '_');
-num = str2double(parts(end));
-prefix = strjoin(parts(1:end-1), '_');
+function val = getInertiaComponent(inertia, name)
+%getInertiaComponent Return the named component, or NaN if absent.
+if isfield(inertia, name)
+    val = inertia.(name);
+else
+    val = NaN;
+end
 end
 
 function throwInvalidJSON(msg)
@@ -307,4 +368,9 @@ end
 function throwWheelOrderMismatch(msg)
 %throwWheelOrderMismatch Throw a vehkit:wheelOrderMismatch exception.
 throw(MException('vehkit:wheelOrderMismatch', '%s', msg));
+end
+
+function throwInvalidInertia(msg)
+%throwInvalidInertia Throw a vehkit:invalidInertia exception.
+throw(MException('vehkit:invalidInertia', '%s', msg));
 end
