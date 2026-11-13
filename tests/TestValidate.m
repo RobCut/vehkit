@@ -215,5 +215,22 @@ classdef TestValidate < matlab.unittest.TestCase
             v.geometry.front_weight_distribution = 0.5;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:conflictingGeometryDefinition');
         end
+
+        function test_validate_axle_order_mismatch(testCase)
+            %test_validate_axle_order_mismatch Verify that axles not
+            %   ordered from front to rear produce
+            %   vehkit:axleOrderMismatch.
+            v = testCase.ValidVehicle;
+            v.axles = v.axles([2 1]);
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:axleOrderMismatch');
+        end
+
+        function test_validate_wheel_order_mismatch(testCase)
+            %test_validate_wheel_order_mismatch Verify that wheels not
+            %   ordered from left to right produce vehkit:wheelOrderMismatch.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels = v.axles{1}.wheels([2 1]);
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:wheelOrderMismatch');
+        end
     end
 end

@@ -20,32 +20,26 @@ vehicle = normalizeCollections(vehicle);
 validateNullability(vehicle);
 validatePositiveScalars(vehicle);
 validateGeometry(vehicle);
+validateOrdering(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
 %validateSchemaVersion Validate the schema_version field.
-
 if ~isfield(vehicle, 'schema_version')
     throwInvalidJSON('Missing required field: schema_version');
 end
-
 sv = vehicle.schema_version;
-
 if ~(ischar(sv) || isstring(sv))
     throwInvalidJSON('schema_version must be a string');
 end
-
 sv = string(sv);
-
 if ~isscalar(sv)
     throwInvalidJSON('schema_version must be a scalar string');
 end
-
 pattern = '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$';
 if isempty(regexp(sv, pattern, 'once'))
     throwInvalidJSON(sprintf('schema_version has invalid format: %s', sv));
 end
-
 if sv ~= "0.1"
     throwUnsupportedSchemaVersion(sv);
 end
@@ -53,18 +47,15 @@ end
 
 function validateRootFields(vehicle)
 %validateRootFields Validate presence and type of required root fields.
-
 if ~isfield(vehicle, 'geometry')
     throwInvalidJSON('Missing required field: geometry');
 end
 if ~isstruct(vehicle.geometry)
     throwInvalidJSON('geometry must be a struct');
 end
-
 if ~isfield(vehicle, 'axles')
     throwInvalidJSON('Missing required field: axles');
 end
-
 if ~isfield(vehicle, 'load_configurations')
     throwInvalidJSON('Missing required field: load_configurations');
 end
@@ -181,6 +172,27 @@ if isfield(vehicle.geometry, 'front_weight_distribution')
 end
 end
 
+function validateOrdering(vehicle)
+%validateOrdering Validate axle and wheel ordering.
+for k = 2:numel(vehicle.axles)
+    if vehicle.axles{k-1}.x <= vehicle.axles{k}.x
+        throwAxleOrderMismatch(sprintf( ...
+            'axles must be ordered from front to rear: axles{%d}.x (%g) <= axles{%d}.x (%g)', ...
+            k-1, vehicle.axles{k-1}.x, k, vehicle.axles{k}.x));
+    end
+end
+for k = 1:numel(vehicle.axles)
+    wheels = vehicle.axles{k}.wheels;
+    for j = 2:numel(wheels)
+        if wheels{j-1}.y < wheels{j}.y
+            throwWheelOrderMismatch(sprintf( ...
+                'wheels in axles{%d} must be ordered left to right: wheels{%d}.y (%g) < wheels{%d}.y (%g)', ...
+                k, j-1, wheels{j-1}.y, j, wheels{j}.y));
+        end
+    end
+end
+end
+
 function throwInvalidJSON(msg)
 %throwInvalidJSON Throw a vehkit:invalidJSONStructure exception.
 throw(MException('vehkit:invalidJSONStructure', '%s', msg));
@@ -202,4 +214,14 @@ function throwConflictingGeometry(msg)
 %throwConflictingGeometry Throw a vehkit:conflictingGeometryDefinition
 %   exception.
 throw(MException('vehkit:conflictingGeometryDefinition', '%s', msg));
+end
+
+function throwAxleOrderMismatch(msg)
+%throwAxleOrderMismatch Throw a vehkit:axleOrderMismatch exception.
+throw(MException('vehkit:axleOrderMismatch', '%s', msg));
+end
+
+function throwWheelOrderMismatch(msg)
+%throwWheelOrderMismatch Throw a vehkit:wheelOrderMismatch exception.
+throw(MException('vehkit:wheelOrderMismatch', '%s', msg));
 end
