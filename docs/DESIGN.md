@@ -26,10 +26,13 @@ The following features are included:
 - When two or more wheels within the same axle have identical lateral coordinates, their stable identifiers are used as a secondary deterministic ordering criterion.
 - The canonical ordering rules for wheel identifiers are defined in `docs/SCHEMA.md`.
 - Wheel ordering is verified from the assigned coordinates and identifiers within each axle. Invalid ordering must produce the identifiable error `vehkit:wheelOrderMismatch`.
+- In the `static_load_based` geometry method, axle ordering is declared by the axle structure and cannot be geometrically verified because longitudinal axle positions are derived rather than assigned.
 
 **Geometry**
 
-- One geometry definition is supported in alpha: `direct`. The method is selected through the explicit field `geometry.method` whose only accepted value in alpha is `direct`. The `static_load_based` method is specified in §1.1.2.
+- Two mutually exclusive geometry definition methods are supported, selected through the explicit field `geometry.method`:
+  - `direct`
+  - `static_load_based`
 
 - **Direct geometry:** longitudinal axle positions are assigned directly. Wheelbase, track widths and CG-to-axle distances are derived.
 
@@ -66,7 +69,34 @@ The following features are included:
 
 - Derived geometric properties include wheel-centre positions, wheelbase, track widths and CG-to-axle distances.
 
-- The presence of `geometry.wheelbase` or `geometry.front_weight_distribution` when `geometry.method` is `direct` must produce the identifiable error `vehkit:conflictingGeometryDefinition`.
+- **Static-load-based geometry:** wheelbase and front weight distribution are assigned, and longitudinal axle positions are reconstructed using static equilibrium equations. This method is restricted to two-axle vehicles.
+
+- The following parameters are exclusive to the static-load-based method:
+  - Wheelbase.
+  - Front weight distribution (`front_weight_distribution`).
+
+- The presence of parameters exclusive to the geometry definition method not selected by `geometry.method` is not allowed and must produce the identifiable error `vehkit:conflictingGeometryDefinition`.
+
+- The `static_load_based` method remains restricted to two-axle vehicles. A `static_load_based` geometry definition with a number of axles different from two must produce the identifiable error `vehkit:unsupportedAxleCount` during vehicle validation.
+
+- The front weight distribution (`front_weight_distribution`) is defined as the dimensionless fraction of the total static vehicle weight supported by the front axle:
+  - It is a fraction, not a percentage.
+  - Its valid range is strictly between zero and one: `0 < front_weight_distribution < 1`.
+  - It refers exclusively to the reference load configuration.
+
+- Static-load-based geometry calculations use the reference load configuration.
+
+- Functions that produce a partially defined result (for example a
+  matrix whose valid components are known and whose unknown components
+  depend on a nullable field) propagate `NaN` in the unknown components
+  rather than raising `vehkit:missingData`. In v0.1, this applies to
+  `vehkit.geometry.wheelCentres` when `geometry.cg_height` or
+  `axles[].wheels[].loaded_radius` is unknown.
+
+- Functions that cannot produce a meaningful result without specific
+  data raise `vehkit:missingData` when the required data are absent or
+  explicitly unknown. The error message distinguishes absent data from
+  explicitly unknown data.
 
 **Mass and inertia**
 
@@ -125,32 +155,9 @@ The following features are included:
 
 #### 1.1.2. Delivered before the v0.1 release
 
-**Vehicle structure**
+**Static equilibrium calculations**
 
-- In the `static_load_based` geometry method, axle ordering is declared by the axle structure and cannot be geometrically verified because longitudinal axle positions are derived rather than assigned.
-
-**Geometry**
-
-- The `static_load_based` geometry definition method is added. With this addition, the `geometry.method` field accepts both values: `direct` and `static_load_based`. The two methods are mutually exclusive.
-
-- **Static-load-based geometry:** wheelbase and front weight distribution are assigned, and longitudinal axle positions are reconstructed using static equilibrium equations. This method is restricted to two-axle vehicles.
-
-- The following parameters are exclusive to the static-load-based method:
-  - Wheelbase.
-  - Front weight distribution (`front_weight_distribution`).
-
-- The presence of parameters exclusive to the geometry definition method not selected by `geometry.method` is not allowed and must produce the identifiable error `vehkit:conflictingGeometryDefinition`.
-
-- The `static_load_based` method remains restricted to two-axle vehicles.
-
-- The front weight distribution (`front_weight_distribution`) is defined as the dimensionless fraction of the total static vehicle weight supported by the front axle:
-  - It is a fraction, not a percentage.
-  - Its valid range is strictly between zero and one: `0 < front_weight_distribution < 1`.
-  - It refers exclusively to the reference load configuration.
-
-- Static-load-based geometry calculations use the reference load configuration.
-
-- Static equilibrium calculations are supported only for vehicles with exactly two axles. A `static_load_based` geometry definition with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount` during vehicle validation. Any static equilibrium calculation requested for a vehicle with a different number of axles must also produce this error.
+- Static equilibrium calculations are supported only for vehicles with exactly two axles. Any static equilibrium calculation requested for a vehicle with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount`.
 
 - Static equilibrium calculations use the standard gravitational acceleration:
   - `g = 9.80665 m/s^2`.
@@ -292,83 +299,79 @@ The initial release is considered complete when both sets of criteria below are 
 
 2. The two reference vehicle definitions can be loaded successfully.
 
-3. Both reference vehicle definitions pass structural validation and the physical validation checks available in alpha: mass and inertia, geometry (`direct` only), axle ordering and wheel ordering.
+3. Both reference vehicle definitions pass structural validation and the physical validation checks available in alpha: mass and inertia, geometry (both `direct` and `static_load_based`), axle ordering and wheel ordering.
 
 4. Invalid vehicle definitions are rejected with identifiable error messages, using only the error identifiers defined in §1.5 that are reachable in alpha.
 
-5. A JSON document declaring `geometry.method = "static_load_based"` is rejected in alpha with `vehkit:invalidParameter`, because the accepted enum in alpha is `{ "direct" }`.
+5. Conflicting geometry parameters produce `vehkit:conflictingGeometryDefinition` (in `direct`, `geometry.wheelbase` or `geometry.front_weight_distribution` present; in `static_load_based`, `axles[].x` present).
 
-6. Conflicting geometry parameters in `direct` (`geometry.wheelbase` or `geometry.front_weight_distribution` present) produce `vehkit:conflictingGeometryDefinition`.
+6. Direct geometry supports vehicles with more than two axles.
 
-7. Direct geometry supports vehicles with more than two axles.
+7. Wheel ordering within each axle is verified, and invalid ordering produces `vehkit:wheelOrderMismatch`.
 
-8. Wheel ordering within each axle is verified, and invalid ordering produces `vehkit:wheelOrderMismatch`.
+8. Wheel longitudinal positions are correctly inherited from their corresponding axle.
 
-9. Wheel longitudinal positions are correctly inherited from their corresponding axle.
+9. Derived geometric properties (wheelbase, track widths, CG-to-axle distances, wheel-centre positions) agree with independently calculated reference values.
 
-10. Derived geometric properties (wheelbase, track widths, CG-to-axle distances, wheel-centre positions) agree with independently calculated reference values.
+10. Axle ordering is verified for the `direct` geometry method, and invalid ordering produces `vehkit:axleOrderMismatch`.
 
-11. Axle ordering is verified for the `direct` geometry method, and invalid ordering produces `vehkit:axleOrderMismatch`.
+11. Inertia validation behaves correctly for complete and partially specified tensors.
 
-12. Inertia validation behaves correctly for complete and partially specified tensors.
+12. Triangle inequalities on the diagonal components are verified whenever the complete diagonal is available, using `tol_triangle`.
 
-13. Triangle inequalities on the diagonal components are verified whenever the complete diagonal is available, using `tol_triangle`.
+13. Positive semidefiniteness is verified for complete inertia tensors using `tol_PSD`.
 
-14. Positive semidefiniteness is verified for complete inertia tensors using `tol_PSD`.
+14. Invalid inertia properties produce `vehkit:invalidInertia`.
 
-15. Invalid inertia properties produce `vehkit:invalidInertia`.
+15. Invalid parameter values and out-of-range values produce `vehkit:invalidParameter`.
 
-16. Invalid parameter values and out-of-range values produce `vehkit:invalidParameter`.
+16. At least one test verifies the handling of missing required data, distinguishing absent from explicitly unknown data.
 
-17. At least one test verifies the handling of missing required data, distinguishing absent from explicitly unknown data.
+17. JSON loading, saving and reloading preserve all assigned data within the tolerances of §1.7.
 
-18. JSON loading, saving and reloading preserve all assigned data within the tolerances of §1.7.
+18. Round-trip tests verify that absent, explicitly unknown and zero-valued data remain distinct after reload.
 
-19. Round-trip tests verify that absent, explicitly unknown and zero-valued data remain distinct after reload.
+19. Schema version validation is tested: supported versions are loaded successfully; formally valid but unsupported versions produce `vehkit:unsupportedSchemaVersion`; missing or malformed versions produce `vehkit:invalidJSONStructure`.
 
-20. Schema version validation is tested: supported versions are loaded successfully; formally valid but unsupported versions produce `vehkit:unsupportedSchemaVersion`; missing or malformed versions produce `vehkit:invalidJSONStructure`.
+20. Calculations requiring explicitly unknown data produce `vehkit:missingData`, with a message distinguishing unknown data from absent data.
 
-21. Calculations requiring explicitly unknown data produce `vehkit:missingData`, with a message distinguishing unknown data from absent data.
+21. The optional `tyre` block is loaded and preserved as-is, including in the round-trip.
 
-22. The optional `tyre` block is loaded and preserved as-is, including in the round-trip.
+22. `DATA.md` documents the sources and references used for both reference vehicles.
 
-23. `DATA.md` documents the sources and references used for both reference vehicles.
+23. `README.md` provides an introduction to the project and includes an image illustrating the results.
 
-24. `README.md` provides an introduction to the project and includes an image illustrating the results.
+24. The project build tool (`buildtool`) executes successfully.
 
-25. The project build tool (`buildtool`) executes successfully.
+25. The automated test suite passes successfully.
 
-26. The automated test suite passes successfully.
+26. `static_load_based` geometry with an axle count different from two produces `vehkit:unsupportedAxleCount`.
+
+27. A two-axle reference vehicle can be defined using both geometry methods with consistent input data.
+
+28. The derived axle positions and geometric properties obtained through `direct` and `static_load_based` agree within the tolerances of §1.7.
+
+29. Axle ordering in the `static_load_based` geometry method is accepted as declared by the axle structure.
+
+30. `geometry.wheelbase` and `geometry.front_weight_distribution` are required when `geometry.method` is `static_load_based`; their absence produces `vehkit:invalidJSONStructure`.
+
+31. `front_weight_distribution` outside the interval `(0, 1)` produces `vehkit:invalidParameter`.
 
 #### 1.6.2. v0.1 release criteria (additional to alpha)
 
-1. `geometry.method = "static_load_based"` is accepted and validated.
+1. Alternative load configurations preserve the assigned CG displacement and inertia reference.
 
-2. The two geometry methods are mutually exclusive: `direct` and `static_load_based` cannot be mixed; a `static_load_based` definition with `axles[].x` present produces `vehkit:conflictingGeometryDefinition`.
+2. Static axle loads are correctly calculated for supported two-axle configurations, using `g = 9.80665 m/s^2`.
 
-3. Static-load-based geometry calculations work for two-axle vehicles.
+3. No function provided in v0.1 derives individual wheel loads.
 
-4. Static-load-based geometry definitions and static equilibrium calculations reject vehicles with an axle count different from two with `vehkit:unsupportedAxleCount`.
+4. Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
 
-5. A two-axle reference vehicle can be defined using both geometry methods with consistent input data.
+5. Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
 
-6. The derived axle positions and geometric properties obtained through `direct` and `static_load_based` agree within the tolerances of §1.7.
+6. The minimal constant-coefficient aerodynamic implementation passes its tests.
 
-7. Axle ordering in the `static_load_based` geometry method is accepted as declared by the axle structure.
-
-8. Alternative load configurations preserve the assigned CG displacement and inertia reference.
-
-9. Static axle loads are correctly calculated for supported two-axle configurations, using `g = 9.80665 m/s^2`.
-
-10. No function provided in v0.1 derives individual wheel loads.
-
-11. Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
-
-12. Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
-
-13. The minimal constant-coefficient aerodynamic implementation passes its tests.
-
-14. Aerodynamic force direction is verified for both positive and negative lift coefficients.
+7. Aerodynamic force direction is verified for both positive and negative lift coefficients.
 
 ### 1.7. Numerical Tolerances
 
