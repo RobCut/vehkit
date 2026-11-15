@@ -63,5 +63,23 @@ classdef TestSave < matlab.unittest.TestCase
             testCase.verifyError(@() vehkit.save(v, filePath), 'vehkit:invalidParameter');
             testCase.verifyFalse(isfile(filePath));
         end
+
+        function test_save_static_load_based_round_trip(testCase)
+            %test_save_static_load_based_round_trip Verify that a static_load_based
+            %   vehicle survives load-validate-save-load-validate without axles[].x
+            %   appearing in the JSON.
+            here = fileparts(mfilename('fullpath'));
+            fixture = fullfile(here, 'fixtures', 'minimal_static_load.json');
+            v = vehkit.validate(vehkit.load(fixture));
+            filePath = fullfile(testCase.TempFolder, 'static_load.json');
+            vehkit.save(v, filePath);
+            text = string(fileread(filePath));
+            testCase.verifyFalse(contains(text, '"x"'));
+            testCase.verifyTrue(contains(text, '"wheelbase"'));
+            testCase.verifyTrue(contains(text, '"front_weight_distribution"'));
+            v2 = vehkit.validate(vehkit.load(filePath));
+            testCase.verifyEqual(v2.axles{1}.x, 1.3, 'AbsTol', 1e-12);
+            testCase.verifyEqual(v2.axles{2}.x, -1.3, 'AbsTol', 1e-12);
+        end
     end
 end

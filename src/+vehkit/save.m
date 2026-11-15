@@ -13,7 +13,9 @@ arguments
 end
 
 filename = string(filename);
+vehicle = stripDerivedAxlePositions(vehicle);
 vehicle = vehkit.validate(vehicle);
+vehicle = stripDerivedAxlePositions(vehicle);
 text = jsonencode(vehicle, 'PrettyPrint', true);
 if ~endsWith(text, newline)
     text = [text newline];
@@ -25,4 +27,22 @@ if fid == -1
 end
 cleanupObj = onCleanup(@() fclose(fid)); %#ok<NASGU>
 fwrite(fid, text, 'char');
+end
+
+function vehicle = stripDerivedAxlePositions(vehicle)
+%stripDerivedAxlePositions Remove axles[].x for static_load_based geometry.
+%   Called before validation (to accept an already-validated struct whose
+%   x has been reconstructed in memory) and after validation (to avoid
+%   writing derived positions into the JSON).
+if ~isfield(vehicle.geometry, 'method')
+    return;
+end
+if string(vehicle.geometry.method) ~= "static_load_based"
+    return;
+end
+for k = 1:numel(vehicle.axles)
+    if isfield(vehicle.axles{k}, 'x')
+        vehicle.axles{k} = rmfield(vehicle.axles{k}, 'x');
+    end
+end
 end
