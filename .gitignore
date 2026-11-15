@@ -4,3 +4,5 @@
 *.slxc
 *.mexw64
 .DS_Store
+# MATLAB buildtool cache
+.buildtool/

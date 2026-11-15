@@ -6,6 +6,7 @@ classdef TestValidate < matlab.unittest.TestCase
     properties
         ValidVehicle
         SingleAxleVehicle
+        StaticLoadVehicle
     end
 
     methods (TestClassSetup)
@@ -16,6 +17,8 @@ classdef TestValidate < matlab.unittest.TestCase
             testCase.ValidVehicle = vehkit.validate(vehkit.load(fixture));
             fixture = fullfile(here, 'fixtures', 'minimal_single_axle.json');
             testCase.SingleAxleVehicle = vehkit.load(fixture);
+            fixture = fullfile(here, 'fixtures', 'minimal_static_load.json');
+            testCase.StaticLoadVehicle = vehkit.load(fixture);
         end
     end
 
@@ -189,12 +192,11 @@ classdef TestValidate < matlab.unittest.TestCase
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
 
-        function test_validate_geometry_method_unsupported(testCase)
-            %test_validate_geometry_method_unsupported Verify that a
-            %   static_load_based geometry method produces
-            %   vehkit:invalidParameter in alpha.
+        function test_validate_geometry_method_unknown(testCase)
+            %test_validate_geometry_method_unknown Verify that an unknown
+            %   geometry method produces vehkit:invalidParameter.
             v = testCase.ValidVehicle;
-            v.geometry.method = 'static_load_based';
+            v.geometry.method = 'foo';
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
 
@@ -326,11 +328,75 @@ classdef TestValidate < matlab.unittest.TestCase
             %   complete, physically valid inertia tensor is accepted.
             v = testCase.ValidVehicle;
             inertia = v.load_configurations.reference.inertia;
-            inertia.ixx = 0;
-            inertia.iyy = 0;
-            inertia.izz = 0;
+            inertia.ixx = 500;
+            inertia.iyy = 1500;
+            inertia.izz = 1800;
+            inertia.ixy = 10;
+            inertia.ixz = 5;
+            inertia.iyz = 0;
             v.load_configurations.reference.inertia = inertia;
             testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_static_load_based_valid(testCase)
+            %test_validate_static_load_based_valid Verify that a
+            %   well-formed static_load_based_vehicle is accepted.
+            v = testCase.StaticLoadVehicle;
+            v = vehkit.validate(v);
+            testCase.verifyEqual(v.axles{1}.x, 1.3, 'AbsTol', 1e-12);
+            testCase.verifyEqual(v.axles{2}.x, -1.3, 'AbsTol', 1e-12);
+        end
+
+        function test_validate_static_load_based_axle_x_forbidden(testCase)
+            %test_validate_static_load_based_axle_x_forbidden Verify that
+            %   axles[].x is forbidden with static_load_based geometry.
+            v = testCase.ValidVehicle;
+            v.geometry.method = 'static_load_based';
+            v.geometry.wheelbase = 2.6;
+            v.geometry.front_weight_distribution = 0.5;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:conflictingGeometryDefinition');
+        end
+
+        function test_validate_static_load_based_wheelbase_missing(testCase)
+            %test_validate_static_load_based_wheelbase_missing Verify that
+            %   a missing wheelbase produces vehkit:invalidJSONStructure.
+            v = testCase.StaticLoadVehicle;
+            v.geometry = rmfield(v.geometry, 'wheelbase');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_static_load_based_fwd_missing(testCase)
+            %test_validate_static_load_based_fwd_missing Verify that a
+            %   missing front_weight_distribution produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.StaticLoadVehicle;
+            v.geometry = rmfield(v.geometry, 'front_weight_distribution');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_static_load_based_three_axles(testCase)
+            %test_validate_static_load_based_three_axles Verify that a
+            %   static_load_based vehicle with 3 axles produces
+            %   vehkit:unsupportedAxleCount.
+            v = testCase.ValidVehicle;
+            v.axles{end+1} = v.axles{end};
+            v.axles{end}.id = 'axle_3';
+            v.geometry.method = 'static_load_based';
+            v.geometry.wheelbase = 2.6;
+            v.geometry.front_weight_distribution = 0.5;
+            for k = 1:numel(v.axles)
+                v.axles{k} = rmfield(v.axles{k}, 'x');
+            end
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:unsupportedAxleCount');
+        end
+
+        function test_validate_static_load_based_fwd_out_of_range(testCase)
+            %test_validate_static_load_based_fwd_out_of_range Verify that a
+            %   front_weight_distribution outside (0,1) produces
+            %   vehkit:invalidParameter
+            v = testCase.StaticLoadVehicle;
+            v.geometry.front_weight_distribution = 0;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
     end
 end

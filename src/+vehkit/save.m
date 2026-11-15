@@ -23,6 +23,6 @@ if fid == -1
     throw(MException('vehkit:save:writeFailed', ...
         'Cannot open file for writing: %s', filename));
 end
+cleanupObj = onCleanup(@() fclose(fid)); %#ok<NASGU>
 fwrite(fid, text, 'char');
-fclose(fid);
 end

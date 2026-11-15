@@ -42,7 +42,7 @@ classdef TestCanonicalVehicles < matlab.unittest.TestCase
 
         function test_race_car_schema_version(testCase)
             %test_race_car_schema_version Verify schema version.
-            testCase.verifyEqual(testCase.RoadCar.schema_version, '0.1');
+            testCase.verifyEqual(testCase.RaceCar.schema_version, '0.1');
         end
 
         function test_race_car_wheelbase(testCase)

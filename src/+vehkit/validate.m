@@ -17,11 +17,11 @@ end
 validateSchemaVersion(vehicle);
 validateRootFields(vehicle);
 vehicle = normalizeCollections(vehicle);
+vehicle = validateGeometry(vehicle);
 validateNullability(vehicle);
 validatePositiveScalars(vehicle);
-validateGeometry(vehicle);
-validateOrdering(vehicle);
 validateIdentifiers(vehicle);
+validateOrdering(vehicle);
 validateInertia(vehicle);
 end
 
@@ -150,27 +150,61 @@ for k = 1:numel(vehicle.axles)
 end
 end
 
-function validateGeometry(vehicle)
-%validateGeometry Validate geometry.method and method-exclusive fields.
+function vehicle = validateGeometry(vehicle)
+%validateGeometry Validate geometry method and reconstruct axle positions.
+%   For direct geometry, axle positions are assigned in the JSON.
+%   For static_load_based geometry, axle positions are reconstructed in
+%   memory from wheelbase and front_weight_distribution, and are never
+%   serialized.
 if ~isfield(vehicle.geometry, 'method')
     throwInvalidJSON('Missing required field: geometry.method');
 end
-method = vehicle.geometry.method;
-if ~(ischar(method) || isstring(method))
+if ~(ischar(vehicle.geometry.method) || isstring(vehicle.geometry.method))
     throwInvalidJSON('geometry.method must be a string');
 end
-method = string(method);
-if method ~= "direct"
-    throwInvalidParameter(sprintf( ...
-        'geometry.method "%s" is not supported in alpha', method));
-end
-if isfield(vehicle.geometry, 'wheelbase')
-    throwConflictingGeometry( ...
-        'geometry.wheelbase is not allowed with method "direct"');
-end
-if isfield(vehicle.geometry, 'front_weight_distribution')
-    throwConflictingGeometry( ...
-        'geometry.front_weight_distribution is not allowed with method "direct"');
+method = string(vehicle.geometry.method);
+switch method
+    case "direct"
+        if isfield(vehicle.geometry, 'wheelbase')
+            throwConflictingGeometry( ...
+                'geometry.wheelbase is not allowed with method "direct"');
+        end
+        if isfield(vehicle.geometry, 'front_weight_distribution')
+            throwConflictingGeometry( ...
+                'geometry.front_weight_distribution is not allowed with method "direct"');
+        end
+    case "static_load_based"
+        if numel(vehicle.axles) ~= 2
+            throwUnsupportedAxleCount(sprintf( ...
+                'static_load_based geometry requires exactly 2 axles, found %d', ...
+                numel(vehicle.axles)));
+        end
+        if ~isfield(vehicle.geometry, 'wheelbase')
+            throwInvalidJSON('Missing required field: geometry.wheelbase');
+        end
+        if ~isfield(vehicle.geometry, 'front_weight_distribution')
+            throwInvalidJSON('Missing required field: geometry.front_weight_distribution');
+        end
+        for k = 1:numel(vehicle.axles)
+            if isfield(vehicle.axles{k}, 'x')
+                throwConflictingGeometry( ...
+                    'axles[].x is not allowed with method "static_load_based"');
+            end
+        end
+        L = vehicle.geometry.wheelbase;
+        lambda = vehicle.geometry.front_weight_distribution;
+        if ~isnumeric(L) || ~isscalar(L) || L <= 0
+            throwInvalidParameter('geometry.wheelbase must be a positive scalar');
+        end
+        if ~isnumeric(lambda) || ~isscalar(lambda) || lambda <= 0 || lambda >= 1
+            throwInvalidParameter( ...
+                'geometry.front_weight_distribution must be strictly between 0 and 1');
+        end
+        vehicle.axles{1}.x = (1 - lambda) * L;
+        vehicle.axles{2}.x = -lambda * L;
+    otherwise
+        throwInvalidParameter(sprintf( ...
+            'geometry.method "%s" is not supported', method));
 end
 end
 
@@ -373,4 +407,9 @@ end
 function throwInvalidInertia(msg)
 %throwInvalidInertia Throw a vehkit:invalidInertia exception.
 throw(MException('vehkit:invalidInertia', '%s', msg));
+end
+
+function throwUnsupportedAxleCount(msg)
+%throwUnsupportedAxleCount Throw a vehkit:unsupportedAxleCount exception.
+throw(MException('vehkit:unsupportedAxleCount', '%s', msg));
 end
