@@ -125,5 +125,4 @@ MIT. See `LICENSE`.
 
 ---
 
-Part of a portfolio of 30 vehicle engineering projects.
 [GitHub profile](https://github.com/RobCut)
