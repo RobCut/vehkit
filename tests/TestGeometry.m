@@ -6,6 +6,7 @@ classdef TestGeometry < matlab.unittest.TestCase
     properties
         MultiAxleVehicle
         SingleAxleVehicle
+        StaticLoadVehicle
     end
 
     methods (TestClassSetup)
@@ -16,6 +17,8 @@ classdef TestGeometry < matlab.unittest.TestCase
             testCase.MultiAxleVehicle = vehkit.validate(vehkit.load(multiFixture));
             singleFixture = fullfile(here, 'fixtures', 'minimal_single_axle.json');
             testCase.SingleAxleVehicle = vehkit.validate(vehkit.load(singleFixture));
+            staticFixture = fullfile(here, 'fixtures', 'minimal_static_load.json');
+            testCase.StaticLoadVehicle = vehkit.validate(vehkit.load(staticFixture));
         end
     end
 
@@ -92,6 +95,20 @@ classdef TestGeometry < matlab.unittest.TestCase
             wc = vehkit.geometry.wheelCentres(v);
             testCase.verifyTrue(isnan(wc(1,3)));
             testCase.verifyFalse(isnan(wc(2,3)));
+        end
+
+        function test_wheelbase_static_load(testCase)
+            %test_wheelbase_static_load Verify the wheelbase of the
+            %   static_load_based fixture.
+            wb = vehkit.geometry.wheelbase(testCase.StaticLoadVehicle);
+            testCase.verifyEqual(wb, 2.6, 'AbsTol', 1e-12);
+        end
+
+        function test_cg_to_axles_static_load(testCase)
+            %test_cg_to_axles_static_load Verify that the reconstructed axle
+            %   positions match the expected values.
+            ca = vehkit.geometry.cgToAxles(testCase.StaticLoadVehicle);
+            testCase.verifyEqual(ca, [1.3; -1.3], 'AbsTol', 1e-12);
         end
     end
 end
