@@ -17,7 +17,7 @@ A generic segment C passenger car (Golf/Focus class, front-wheel drive).
 |---|---|---|
 | Wheelbase | 2.65 m | Typical segment C value, cross-checked against CommonRoad BMW 320i (2.81 m) and similar vehicles |
 | Front track | 1.53 m | Typical segment C value |
-| Rear track | 1.51 m | Typical segment C value (slightly narrower than front for understeer bias) |
+| Rear track | 1.51 m | Typical segment C value |
 | CG height | 0.56 m | Typical for a passenger car; Previati et al. 2024 (World Electric Vehicle Journal 15, 266) provide empirical estimates for electric vehicles |
 | Reference mass | 1385 kg | Approximate kerb weight 1300 kg + 75 kg driver + 10 kg fuel |
 | Inertia Ixx | 470 kg·m² | Estimated from typical roll inertia of a 1.4-tonne passenger car |
@@ -42,7 +42,7 @@ A Formula SAE-style single-seater (rear-wheel drive, 13-inch wheels).
 | Inertia Ixx | 80 kg·m² | Estimated from typical FSAE roll inertia |
 | Inertia Iyy | 120 kg·m² | Estimated from typical FSAE pitch inertia |
 | Inertia Izz | 150 kg·m² | Estimated from typical FSAE yaw inertia |
-| Loaded radius | 0.20 m | Typical for 13-inch FSAE slick under static load |
+| Loaded radius | 0.20 m | Typical for 10-inch FSAE slick under static load |
 
 Inertia values satisfy the triangle inequalities and are positive
 definite. They are estimated within plausible ranges, not measured.
