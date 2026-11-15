@@ -5,7 +5,7 @@ canonical JSON files under `data/`. It distinguishes between values
 anchored to public sources, values estimated from standard engineering
 references, and values constructed within plausible ranges.
 
-No proprietary or confidential data from Formula SAE TTC, university
+No proprietary or confidential data from Formula SAE, TTC, university
 projects, or team material is used. All values are either public,
 published, or constructed from scratch.
 
