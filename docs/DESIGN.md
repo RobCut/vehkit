@@ -98,6 +98,17 @@ The following features are included:
   explicitly unknown. The error message distinguishes absent data from
   explicitly unknown data.
 
+**Static axle loads**
+
+- Static equilibrium calculations are supported only for vehicles with exactly two axles. Any static equilibrium calculation requested for a vehicle with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount`.
+
+- Static equilibrium calculations use the standard gravitational acceleration:
+  - `g = 9.80665 m/s^2`.
+
+- Static axle loads may be derived when the required mass and CG data are available. Individual wheel loads are not derived in v0.1.
+
+- The distribution of vertical loads between wheels belonging to the same axle is outside the scope of v0.1 because it requires additional assumptions or physical information.
+
 **Mass and inertia**
 
 - Vehicle-level total mass.
@@ -155,16 +166,7 @@ The following features are included:
 
 #### 1.1.2. Delivered before the v0.1 release
 
-**Static equilibrium calculations**
-
-- Static equilibrium calculations are supported only for vehicles with exactly two axles. Any static equilibrium calculation requested for a vehicle with a different number of axles must produce the identifiable error `vehkit:unsupportedAxleCount`.
-
-- Static equilibrium calculations use the standard gravitational acceleration:
-  - `g = 9.80665 m/s^2`.
-
-- Static axle loads may be derived when the required mass and CG data are available. Individual wheel loads are not derived in v0.1.
-
-- The distribution of vertical loads between wheels belonging to the same axle is outside the scope of v0.1 because it requires additional assumptions or physical information.
+#### 1.1.2. Delivered before the v0.1 release
 
 **Load configurations**
 
@@ -357,21 +359,21 @@ The initial release is considered complete when both sets of criteria below are 
 
 31. `front_weight_distribution` outside the interval `(0, 1)` produces `vehkit:invalidParameter`.
 
+32. Static axle loads for a two-axle vehicle sum to the total weight within tolerance; axle loads are computed with `g = 9.80665 m/s^2`; a vehicle with a number of axles different from two produces `vehkit:unsupportedAxleCount`.
+
 #### 1.6.2. v0.1 release criteria (additional to alpha)
 
 1. Alternative load configurations preserve the assigned CG displacement and inertia reference.
 
-2. Static axle loads are correctly calculated for supported two-axle configurations, using `g = 9.80665 m/s^2`.
+2. No function provided in v0.1 derives individual wheel loads.
 
-3. No function provided in v0.1 derives individual wheel loads.
+3. Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
 
-4. Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
+4. Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
 
-5. Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
+5. The minimal constant-coefficient aerodynamic implementation passes its tests.
 
-6. The minimal constant-coefficient aerodynamic implementation passes its tests.
-
-7. Aerodynamic force direction is verified for both positive and negative lift coefficients.
+6. Aerodynamic force direction is verified for both positive and negative lift coefficients.
 
 ### 1.7. Numerical Tolerances
 
