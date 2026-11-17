@@ -15,11 +15,11 @@ A generic segment C passenger car (Golf/Focus class, front-wheel drive).
 
 | Parameter | Value | Origin |
 |---|---|---|
-| Wheelbase | 2.65 m | Typical segment C value, cross-checked against CommonRoad BMW 320i (2.81 m) and similar vehicles |
+| Wheelbase | 2.65 m | Typical segment C value, in the range of published vehicle models |
 | Front track | 1.53 m | Typical segment C value |
 | Rear track | 1.51 m | Typical segment C value |
 | CG height | 0.56 m | Typical for a passenger car; Previati et al. 2024 (World Electric Vehicle Journal 15, 266) provide empirical estimates for electric vehicles |
-| Reference mass | 1385 kg | Approximate kerb weight 1300 kg + 75 kg driver + 10 kg fuel |
+| Reference mass | 1385 kg | Approximate kerb mass ~1300 kg (fluids at nominal), plus 75 kg driver and 10 kg fuel top-up |
 | Inertia Ixx | 470 kg·m² | Estimated from typical roll inertia of a 1.4-tonne passenger car |
 | Inertia Iyy | 1900 kg·m² | Estimated from typical pitch inertia |
 | Inertia Izz | 2200 kg·m² | Estimated from typical yaw inertia |
@@ -30,7 +30,7 @@ definite. They are estimated, not measured.
 
 ## data/race_car.json
 
-A Formula SAE-style single-seater (rear-wheel drive, 13-inch wheels).
+A Formula SAE-style single-seater (rear-wheel drive, 10-inch wheels).
 
 | Parameter | Value | Origin |
 |---|---|---|
@@ -56,8 +56,9 @@ definite. They are estimated within plausible ranges, not measured.
   configuration (deferred to the release scope).
 - **Loaded radius**: vertical distance from wheel centre to road surface
   under static reference load. Not the unloaded geometric radius.
-- **Geometry method**: both files use `direct` geometry (axle positions
-  assigned directly). `static_load_based` geometry is deferred.
+- **Geometry method**: both reference files use `direct` geometry
+  (axle positions assigned directly). `static_load_based` geometry is
+  supported and tested with a dedicated fixture under `tests/fixtures/`.
 - **Inertia convention**: off-diagonal elements are the matrix elements
   directly, without sign change (see `docs/SCHEMA.md` §8.7).
 
