@@ -758,5 +758,55 @@ classdef TestValidate < matlab.unittest.TestCase
             v.tyre = struct('model', [], 'parameters', struct('PCX1', 1.5));
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
         end
+
+        function test_validate_unknown_field_geometry(testCase)
+            %test_validate_unknown_field_geometry Verify that an unrecognized field
+            %   in the geometry block produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.geometry.unknown_field = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_unknown_field_inertia(testCase)
+            %test_validate_unknown_field_inertia Verify that an unrecognized field
+            %   in the inertia block (e.g. ixxx instead of ixx) produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.inertia.ixxx = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_unknown_field_reference(testCase)
+            %test_validate_unknown_field_reference Verify that an unrecognized
+            %   field in the reference configuration produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.unknown = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_unknown_field_tyre(testCase)
+            %test_validate_unknown_field_tyre Verify that an unrecognized field
+            %   in the tyre block produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.tyre = struct('model', 'MF61', 'parameters', struct('PCX1', 1.5), 'unknown', 1);
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_unknown_field_axle(testCase)
+            %test_validate_unknown_field_axle Verify that an unrecognized field
+            %   in an axle produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1}.unknown = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_unknown_field_wheel(testCase)
+            %test_validate_unknown_field_wheel Verify that an unrecognized field
+            %   in a wheel produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.unknown = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
     end
 end

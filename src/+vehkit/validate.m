@@ -18,6 +18,7 @@ validateSchemaVersion(vehicle);
 validateRootFields(vehicle);
 vehicle = normalizeCollections(vehicle);
 validatePresence(vehicle);
+validateUnknownFields(vehicle);
 validateNumericTypes(vehicle);
 vehicle = validateGeometry(vehicle);
 validateNullability(vehicle);
@@ -579,6 +580,63 @@ elseif ischar(params) || isstring(params)
     % strings allowed
 else
     throwInvalidParameter(sprintf('%s has unsupported type', path));
+end
+end
+
+function validateUnknownFields(vehicle)
+%validateUnknownFields Reject unrecognized fields in defined blocks.
+checkFields(vehicle, ...
+    {'schema_version', 'geometry', 'axles', 'load_configurations', ...
+    'tyre', 'aerodynamics'}, ...
+    'vehicle');
+
+checkFields(vehicle.geometry, ...
+    {'method', 'cg_height', 'wheelbase', 'front_weight_distribution'}, ...
+    'geometry');
+for k = 1:numel(vehicle.axles)
+    checkFields(vehicle.axles{k}, {'id', 'x', 'wheels'}, ...
+        sprintf('axles{%d}', k));
+    for j = 1:numel(vehicle.axles{k}.wheels)
+        checkFields(vehicle.axles{k}.wheels{j}, ...
+            {'id', 'y', 'loaded_radius'}, ...
+            sprintf('axles{%d}.wheels{%d}', k, j));
+    end
+end
+checkFields(vehicle.load_configurations, {'reference', 'alternative'}, ...
+    'load_configurations');
+checkFields(vehicle.load_configurations.reference, ...
+    {'mass', 'inertia'}, ...
+    'load_configurations.reference');
+checkFields(vehicle.load_configurations.reference.inertia, ...
+    {'ixx', 'iyy', 'izz', 'ixy', 'ixz', 'iyz'}, ...
+    'load_configurations.reference.inertia');
+if isfield(vehicle.load_configurations, 'alternative')
+    checkFields(vehicle.load_configurations.alternative, ...
+        {'mass', 'cg_offset', 'inertia'}, ...
+        'load_configurations.alternative');
+    if isfield(vehicle.load_configurations.alternative, 'inertia')
+        checkFields(vehicle.load_configurations.alternative.inertia, ...
+            {'ixx', 'iyy', 'izz', 'ixy', 'ixz', 'iyz'}, ...
+            'load_configurations.alternative.inertia');
+    end
+end
+
+if isfield(vehicle, 'tyre')
+    checkFields(vehicle.tyre, {'model', 'parameters'}, 'tyre');
+end
+end
+
+function checkFields(s, allowed, path)
+%checkFields Throw if S contains any field not in ALLOWED.
+if ~isstruct(s)
+    return;
+end
+fields = fieldnames(s);
+for i = 1:numel(fields)
+    name = fields{i};
+    if ~any(strcmp(name, allowed))
+        throwInvalidJSON(sprintf('Unrecognized field: %s.%s', path, name));
+    end
 end
 end
 
