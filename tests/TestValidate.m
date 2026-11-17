@@ -398,5 +398,37 @@ classdef TestValidate < matlab.unittest.TestCase
             v.geometry.front_weight_distribution = 0;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
+
+        function test_validate_presence_cg_height_missing(testCase)
+            %test_validate_presence_cg_height_missing Verify that a missing
+            %   cg_height produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.geometry = rmfield(v.geometry, 'cg_height');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_presence_wheel_y_missing(testCase)
+            %test_validate_presence_wheel_y_missing Verify that a missing
+            %   wheel y produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1} = rmfield(v.axles{1}.wheels{1}, 'y');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_presence_loaded_radius_missing(testCase)
+            %test_validate_presence_loaded_radius_missing Verify that a 
+            %   missing loaded_radius produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1} = rmfield(v.axles{1}.wheels{1}, 'loaded_radius');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_presence_mass_missing(testCase)
+            %test_validate_presence_mass_missing Verify that a missing 
+            %   reference mass produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference = rmfield(v.load_configurations.reference, 'mass');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
     end
 end

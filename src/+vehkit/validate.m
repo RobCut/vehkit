@@ -17,6 +17,7 @@ end
 validateSchemaVersion(vehicle);
 validateRootFields(vehicle);
 vehicle = normalizeCollections(vehicle);
+validatePresence(vehicle)
 vehicle = validateGeometry(vehicle);
 validateNullability(vehicle);
 validatePositiveScalars(vehicle);
@@ -368,6 +369,35 @@ if isfield(inertia, name)
     val = inertia.(name);
 else
     val = NaN;
+end
+end
+
+function validatePresence(vehicle)
+%validatePresence Verify that mandatory numeric fields are present.
+
+if ~isfield(vehicle.geometry, 'cg_height')
+    throwInvalidJSON('Missing required field: geometry.cg_height');
+end
+
+if ~isfield(vehicle.load_configurations, 'reference')
+    throwInvalidJSON('Missing required field: load_configurations.reference');
+end
+if ~isfield(vehicle.load_configurations.reference, 'mass')
+    throwInvalidJSON('Missing required field: load_configurations.reference.mass');
+end
+
+for k = 1:numel(vehicle.axles)
+    for j = 1:numel(vehicle.axles{k}.wheels)
+        wheel = vehicle.axles{k}.wheels{j};
+        if ~isfield(wheel, 'y')
+            throwInvalidJSON(sprintf( ...
+                'Missing required field: axles{%d}.wheels{%d}.y', k, j));
+        end
+        if ~isfield(wheel, 'loaded_radius')
+            throwInvalidJSON(sprintf( ...
+                'Missing required field: axles{%d}.wheels{%d}.loaded_radius', k, j));
+        end
+    end
 end
 end
 
