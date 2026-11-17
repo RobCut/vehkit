@@ -430,5 +430,93 @@ classdef TestValidate < matlab.unittest.TestCase
             v.load_configurations.reference = rmfield(v.load_configurations.reference, 'mass');
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
         end
+
+        function test_validate_mass_inf(testCase)
+            %test_validate_mass_inf Verify that an infinite mass produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.mass = Inf;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_mass_neg_inf(testCase)
+            %test_validate_mass_neg_inf Verify that a negative infinite mass
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.mass = -Inf;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_axle_x_inf(testCase)
+            %test_validate_axle_x_inf Verify that an infinite axle x produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{1}.x = Inf;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_wheel_y_inf(testCase)
+            %test_validate_wheel_y_inf Verify that an infinite wheel y produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.y = Inf;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_loaded_radius_inf(testCase)
+            %test_validate_loaded_radius_inf Verify that an infinite loaded_radius
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.loaded_radius = Inf;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_cg_height_inf(testCase)
+            %test_validate_cg_height_inf Verify that an infinite cg_height
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.geometry.cg_height = Inf;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_mass_wrong_type(testCase)
+            %test_validate_mass_wrong_type Verify that a non-numeric mass produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.mass = 'abc';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_axle_x_wrong_type(testCase)
+            %test_validate_axle_x_wrong_type Verify that a non-numeric axle x
+            %   produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1}.x = 'abc';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_wheel_y_wrong_type(testCase)
+            %test_validate_wheel_y_wrong_type Verify that a non-numeric wheel y
+            %   produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.y = 'abc';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_loaded_radius_wrong_type(testCase)
+            %test_validate_loaded_radius_wrong_type Verify that a non-numeric
+            %   loaded_radius produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1}.wheels{1}.loaded_radius = 'abc';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_cg_height_wrong_type(testCase)
+            %test_validate_cg_height_wrong_type Verify that a non-numeric cg_height
+            %   produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.geometry.cg_height = 'abc';
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
     end
 end

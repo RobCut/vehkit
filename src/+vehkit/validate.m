@@ -17,7 +17,8 @@ end
 validateSchemaVersion(vehicle);
 validateRootFields(vehicle);
 vehicle = normalizeCollections(vehicle);
-validatePresence(vehicle)
+validatePresence(vehicle);
+validateNumericTypes(vehicle);
 vehicle = validateGeometry(vehicle);
 validateNullability(vehicle);
 validatePositiveScalars(vehicle);
@@ -194,10 +195,10 @@ switch method
         end
         L = vehicle.geometry.wheelbase;
         lambda = vehicle.geometry.front_weight_distribution;
-        if ~isnumeric(L) || ~isscalar(L) || L <= 0
-            throwInvalidParameter('geometry.wheelbase must be a positive scalar');
+        if L <= 0
+            throwInvalidParameter('geometry.wheelbase must be positive');
         end
-        if ~isnumeric(lambda) || ~isscalar(lambda) || lambda <= 0 || lambda >= 1
+        if lambda <= 0 || lambda >= 1
             throwInvalidParameter( ...
                 'geometry.front_weight_distribution must be strictly between 0 and 1');
         end
@@ -369,6 +370,65 @@ if isfield(inertia, name)
     val = inertia.(name);
 else
     val = NaN;
+end
+end
+
+function validateNumericTypes(vehicle)
+%validateNumericTypes Verify numeric type, scalar shape, and finiteness.
+
+if isfield(vehicle.geometry, 'cg_height')
+    checkNumericScalar(vehicle.geometry.cg_height, 'geometry.cg_height');
+end
+if isfield(vehicle.geometry, 'wheelbase')
+    checkNumericScalar(vehicle.geometry.wheelbase, 'geometry.wheelbase');
+end
+if isfield(vehicle.geometry, 'front_weight_distribution')
+    checkNumericScalar(vehicle.geometry.front_weight_distribution, ...
+        'geometry.front_weight_distribution');
+end
+
+checkNumericScalar(vehicle.load_configurations.reference.mass, ...
+    'load_configurations.reference.mass');
+
+for k = 1:numel(vehicle.axles)
+    axle = vehicle.axles{k};
+    if isfield(axle, 'x')
+        checkNumericScalar(axle.x, sprintf('axles{%d}.x', k));
+    end
+    for j = 1:numel(axle.wheels)
+        wheel = axle.wheels{j};
+        checkNumericScalar(wheel.y, ...
+            sprintf('axles{%d}.wheels{%d}.y', k, j));
+        checkNumericScalar(wheel.loaded_radius, ...
+            sprintf('axles{%d}.wheels{%d}.loaded_radius', k, j));
+    end
+end
+
+if isfield(vehicle.load_configurations.reference, 'inertia')
+    inertia = vehicle.load_configurations.reference.inertia;
+    components = {'ixx', 'iyy', 'izz', 'ixy', 'ixz', 'iyz'};
+    for c = 1:numel(components)
+        name = components{c};
+        if isfield(inertia, name)
+            checkNumericScalar(inertia.(name), sprintf('inertia.%s', name));
+        end
+    end
+end
+end
+
+function checkNumericScalar(val, path)
+%checkNumericScalar Verify that VAL is a numeric scalar and finite.
+%   NaN is allowed (nullability is handled elsewhere); Inf and -Inf are
+%   rejected as invalid parameter values. Non-numeric values produce a
+%   structural error.
+if ~isnumeric(val) && ~islogical(val)
+    throwInvalidJSON(sprintf('%s must be numeric', path));
+end
+if ~isscalar(val)
+    throwInvalidJSON(sprintf('%s must be a scalar', path));
+end
+if isinf(val)
+    throwInvalidParameter(sprintf('%s must be finite', path));
 end
 end
 
