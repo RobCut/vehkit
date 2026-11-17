@@ -121,6 +121,13 @@ function validateNullability(vehicle)
 if isnan(vehicle.load_configurations.reference.mass)
     throwInvalidParameter('mass must not be NaN');
 end
+if isfield(vehicle.geometry, 'wheelbase') && isnan(vehicle.geometry.wheelbase)
+    throwInvalidParameter('geometry.wheelbase must not be NaN');
+end
+if isfield(vehicle.geometry, 'front_weight_distribution') && ...
+        isnan(vehicle.geometry.front_weight_distribution)
+    throwInvalidParameter('geometry.front_weight_distribution must not be NaN');
+end
 for k = 1:numel(vehicle.axles)
     axle = vehicle.axles{k};
     if isnan(axle.x)
@@ -141,6 +148,9 @@ function validatePositiveScalars(vehicle)
 %   positive.
 if vehicle.load_configurations.reference.mass <= 0
     throwInvalidParameter('mass must be positive');
+end
+if ~isnan(vehicle.geometry.cg_height) && vehicle.geometry.cg_height <= 0
+    throwInvalidParameter('geometry.cg_height must be positive when known');
 end
 for k = 1:numel(vehicle.axles)
     axle = vehicle.axles{k};
@@ -177,12 +187,13 @@ switch method
             throwConflictingGeometry( ...
                 'geometry.front_weight_distribution is not allowed with method "direct"');
         end
-    case "static_load_based"
-        if numel(vehicle.axles) ~= 2
-            throwUnsupportedAxleCount(sprintf( ...
-                'static_load_based geometry requires exactly 2 axles, found %d', ...
-                numel(vehicle.axles)));
+        for k = 1:numel(vehicle.axles)
+            if ~isfield(vehicle.axles{k}, 'x')
+                throwInvalidJSON(sprintf( ...
+                    'Missing required field: axles{%d}.x', k));
+            end
         end
+    case "static_load_based"
         if ~isfield(vehicle.geometry, 'wheelbase')
             throwInvalidJSON('Missing required field: geometry.wheelbase');
         end
@@ -195,8 +206,19 @@ switch method
                     'axles[].x is not allowed with method "static_load_based"');
             end
         end
+        if numel(vehicle.axles) ~= 2
+            throwUnsupportedAxleCount(sprintf( ...
+                'static_load_based geometry requires exactly 2 axles, found %d', ...
+                numel(vehicle.axles)));
+        end
         L = vehicle.geometry.wheelbase;
         lambda = vehicle.geometry.front_weight_distribution;
+        if isnan(L)
+            throwInvalidParameter('geometry.wheelbase must not be NaN');
+        end
+        if isnan(lambda)
+            throwInvalidParameter('geometry.front_weight_distribution must not be NaN');
+        end
         if L <= 0
             throwInvalidParameter('geometry.wheelbase must be positive');
         end
@@ -439,7 +461,7 @@ function checkNumericScalar(val, path)
 %   NaN is allowed (nullability is handled elsewhere); Inf and -Inf are
 %   rejected as invalid parameter values. Non-numeric values produce a
 %   structural error.
-if ~isnumeric(val) && ~islogical(val)
+if ~isnumeric(val)
     throwInvalidJSON(sprintf('%s must be numeric', path));
 end
 if ~isscalar(val)

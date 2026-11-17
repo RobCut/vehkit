@@ -675,5 +675,69 @@ classdef TestValidate < matlab.unittest.TestCase
                 'parameters', struct('PCX1', Inf));
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
         end
+
+        function test_validate_direct_axle_x_missing(testCase)
+            %test_validate_direct_axle_x_missing Verify that a direct geometry
+            %   vehicle with a missing axles[].x produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.axles{1} = rmfield(v.axles{1}, 'x');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_cg_height_negative(testCase)
+            %test_validate_cg_height_negative Verify that a negative cg_height
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.geometry.cg_height = -0.3;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_cg_height_zero(testCase)
+            %test_validate_cg_height_zero Verify that a zero cg_height produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.geometry.cg_height = 0;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_wheelbase_nan(testCase)
+            %test_validate_static_load_wheelbase_nan Verify that a NaN wheelbase
+            %   with static_load_based geometry produces vehkit:invalidParameter.
+            v = testCase.StaticLoadVehicle;
+            v.geometry.wheelbase = NaN;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_fwd_nan(testCase)
+            %test_validate_static_load_fwd_nan Verify that a NaN
+            %   front_weight_distribution with static_load_based geometry produces
+            %   vehkit:invalidParameter.
+            v = testCase.StaticLoadVehicle;
+            v.geometry.front_weight_distribution = NaN;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_based_three_axles_with_x(testCase)
+            %test_validate_static_load_based_three_axles_with_x Verify that a
+            %   static_load_based vehicle with 3 axles AND axles[].x present
+            %   produces vehkit:conflictingGeometryDefinition (conflict checked
+            %   before axle count, per SCHEMA §6.3.4).
+            v = testCase.ValidVehicle;
+            v.axles{end+1} = v.axles{end};
+            v.axles{end}.id = 'axle_3';
+            v.geometry.method = 'static_load_based';
+            v.geometry.wheelbase = 2.6;
+            v.geometry.front_weight_distribution = 0.5;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:conflictingGeometryDefinition');
+        end
+
+        function test_validate_mass_logical(testCase)
+            %test_validate_mass_logical Verify that a logical mass produces
+            %   vehkit:invalidJSONStructure (logicals are not numeric).
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference.mass = true;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
     end
 end
