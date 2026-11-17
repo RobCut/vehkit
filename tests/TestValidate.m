@@ -416,7 +416,7 @@ classdef TestValidate < matlab.unittest.TestCase
         end
 
         function test_validate_presence_loaded_radius_missing(testCase)
-            %test_validate_presence_loaded_radius_missing Verify that a 
+            %test_validate_presence_loaded_radius_missing Verify that a
             %   missing loaded_radius produces vehkit:invalidJSONStructure.
             v = testCase.ValidVehicle;
             v.axles{1}.wheels{1} = rmfield(v.axles{1}.wheels{1}, 'loaded_radius');
@@ -424,7 +424,7 @@ classdef TestValidate < matlab.unittest.TestCase
         end
 
         function test_validate_presence_mass_missing(testCase)
-            %test_validate_presence_mass_missing Verify that a missing 
+            %test_validate_presence_mass_missing Verify that a missing
             %   reference mass produces vehkit:invalidJSONStructure.
             v = testCase.ValidVehicle;
             v.load_configurations.reference = rmfield(v.load_configurations.reference, 'mass');
@@ -517,6 +517,94 @@ classdef TestValidate < matlab.unittest.TestCase
             v = testCase.ValidVehicle;
             v.geometry.cg_height = 'abc';
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_alternative_valid(testCase)
+            %test_validate_alternative_valid Verify that a well-formed alternative
+            %   load configuration is accepted.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_alternative_mass_missing(testCase)
+            %test_validate_alternative_mass_missing Verify that a missing
+            %   alternative mass produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_alternative_mass_negative(testCase)
+            %test_validate_alternative_mass_negative Verify that a negative
+            %   alternative mass produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', -100.0, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_alternative_cg_offset_missing(testCase)
+            %test_validate_alternative_cg_offset_missing Verify that a missing
+            %   cg_offset produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_alternative_cg_offset_wrong_length(testCase)
+            %test_validate_alternative_cg_offset_wrong_length Verify that a
+            %   cg_offset with the wrong number of components produces
+            %   vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_alternative_cg_offset_nan(testCase)
+            %test_validate_alternative_cg_offset_nan Verify that a cg_offset with
+            %   an unknown component produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; NaN; -0.02], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_alternative_inertia_missing(testCase)
+            %test_validate_alternative_inertia_missing Verify that a missing
+            %   alternative inertia produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0; -0.02]);
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_alternative_inertia_not_psd(testCase)
+            %test_validate_alternative_inertia_not_psd Verify that an alternative
+            %   inertia tensor that is not positive semidefinite produces
+            %   vehkit:invalidInertia.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 1, 'iyy', 1, 'izz', 1, ...
+                'ixy', 100, 'ixz', 0, 'iyz', 0));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidInertia');
         end
     end
 end

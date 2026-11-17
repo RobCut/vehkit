@@ -137,6 +137,19 @@ The following features are included:
 
 - Axle and wheel positions remain unchanged between load configurations.
 
+- One alternative load configuration (`alternative`).
+- The alternative configuration is optional. When present, it must explicitly specify:
+  - Total mass.
+  - CG displacement (`cg_offset`).
+  - Inertia tensor.
+- The CG displacement is defined as the alternative CG position minus the reference CG position, expressed in the global vehicle reference frame.
+- The alternative inertia tensor is referred to its own CG, with axes parallel to the global reference axes.
+- The alternative CG height is derived from its vertical displacement relative to the reference configuration.
+- Loaded radii remain those specified for the reference configuration in v0.1. This is an approximation that neglects changes in tyre deformation due to variations in static wheel loads.
+- Variations in body height and suspension position between load configurations are not modelled in v0.1.
+- Automatic CG displacement calculation from individual component masses or load distributions is outside the scope of v0.1.
+- Static axle loads for the alternative configuration are not yet exposed via a public function in v0.1; they will be added when a consuming project requires them.
+
 **Tyres**
 
 - Optional tyre representation at vehicle level.
@@ -165,32 +178,6 @@ The following features are included:
 - Automated tests for implemented functionality.
 
 #### 1.1.2. Delivered before the v0.1 release
-
-#### 1.1.2. Delivered before the v0.1 release
-
-**Load configurations**
-
-- One alternative load configuration (`alternative`).
-- The alternative configuration must explicitly specify:
-  - Total mass.
-  - CG displacement (`cg_offset`).
-  - Inertia tensor.
-
-- The CG displacement is defined as the alternative CG position minus the reference CG position, expressed in the global vehicle reference frame.
-
-- The alternative inertia tensor is referred to its own CG, with axes parallel to the global reference axes.
-
-- The alternative CG height is derived from its vertical displacement relative to the reference configuration.
-
-- Static axle loads are derived from the mass and CG position of the corresponding configuration whenever the required data are available and the static equilibrium calculation is supported.
-
-- Individual wheel loads are not calculated in v0.1.
-
-- Loaded radii remain those specified for the reference configuration in v0.1. This is an approximation that neglects changes in tyre deformation due to variations in static wheel loads.
-
-- Consequently, variations in body height and suspension position between load configurations are not modelled in v0.1.
-
-- Automatic CG displacement calculation from individual component masses or load distributions is outside the scope of v0.1.
 
 **Optional subsystems**
 
@@ -361,19 +348,19 @@ The initial release is considered complete when both sets of criteria below are 
 
 32. Static axle loads for a two-axle vehicle sum to the total weight within tolerance; axle loads are computed with `g = 9.80665 m/s^2`; a vehicle with a number of axles different from two produces `vehkit:unsupportedAxleCount`.
 
+33. Alternative load configurations are validated when present: `mass` must be present, numeric, and positive; `cg_offset` must be present and have three finite known components; `inertia` must be present and satisfy the same physical validity checks as the reference configuration.
+
 #### 1.6.2. v0.1 release criteria (additional to alpha)
 
-1. Alternative load configurations preserve the assigned CG displacement and inertia reference.
+1. No function provided in v0.1 derives individual wheel loads.
 
-2. No function provided in v0.1 derives individual wheel loads.
+2. Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
 
-3. Optional subsystem handling is tested for absent, partially specified and fully specified blocks.
+3. Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
 
-4. Aerodynamic calculations are independently tested for drag and downforce, including cases with insufficient data for one calculation but sufficient data for another.
+4. The minimal constant-coefficient aerodynamic implementation passes its tests.
 
-5. The minimal constant-coefficient aerodynamic implementation passes its tests.
-
-6. Aerodynamic force direction is verified for both positive and negative lift coefficients.
+5. Aerodynamic force direction is verified for both positive and negative lift coefficients.
 
 ### 1.7. Numerical Tolerances
 

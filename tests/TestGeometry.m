@@ -105,15 +105,15 @@ classdef TestGeometry < matlab.unittest.TestCase
         end
 
         function test_cg_to_axles_static_load(testCase)
-            %test_cg_to_axles_static_load Verify that the reconstructed 
+            %test_cg_to_axles_static_load Verify that the reconstructed
             %   axle positions match the expected values.
             ca = vehkit.geometry.cgToAxles(testCase.StaticLoadVehicle);
             testCase.verifyEqual(ca, [1.3; -1.3], 'AbsTol', 1e-12);
         end
 
         function test_wheel_centres_strict_cg_height_nan(testCase)
-            %test_wheel_centres_strict_cg_height_nan Verify that 
-            %   wheelCentresStrict raises vehkit:missingData when 
+            %test_wheel_centres_strict_cg_height_nan Verify that
+            %   wheelCentresStrict raises vehkit:missingData when
             %   cg_height is explicitly unknown.
             v = testCase.MultiAxleVehicle;
             v.geometry.cg_height = NaN;
@@ -123,7 +123,7 @@ classdef TestGeometry < matlab.unittest.TestCase
 
         function test_wheel_centres_strict_loaded_radius_nan(testCase)
             %test_wheel_centres_strict_loaded_radius_nan Verify that
-            %   wheelCentresStrict raises vehkit:missingData when a 
+            %   wheelCentresStrict raises vehkit:missingData when a
             %   loaded_radius is explicitly unknown.
             v = testCase.MultiAxleVehicle;
             v.axles{1}.wheels{1}.loaded_radius = NaN;

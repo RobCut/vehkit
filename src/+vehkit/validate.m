@@ -25,6 +25,7 @@ validatePositiveScalars(vehicle);
 validateIdentifiers(vehicle);
 validateOrdering(vehicle);
 validateInertia(vehicle);
+validateAlternative(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -314,13 +315,28 @@ end
 end
 
 function validateInertia(vehicle)
-%validateInertia Validate the inertia tensor.
+%validateInertia Validate the reference inertia tensor.
+
 if ~isfield(vehicle.load_configurations.reference, 'inertia')
     throwInvalidJSON('Missing required field: load_configurations.reference.inertia');
 end
 inertia = vehicle.load_configurations.reference.inertia;
 if ~isstruct(inertia) || ~isscalar(inertia)
     throwInvalidJSON('load_configurations.reference.inertia must be a struct');
+end
+
+validateInertiaStruct(inertia);
+end
+
+function validateInertiaStruct(inertia)
+%validateInertiaStruct Validate the inertia tensor components and physics.
+
+components = {'ixx', 'iyy', 'izz', 'ixy', 'ixz', 'iyz'};
+for c = 1:numel(components)
+    name = components{c};
+    if isfield(inertia, name)
+        checkNumericScalar(inertia.(name), sprintf('inertia.%s', name));
+    end
 end
 ixx = getInertiaComponent(inertia, 'ixx');
 iyy = getInertiaComponent(inertia, 'iyy');
@@ -349,6 +365,7 @@ if ~isnan(ixx) && ~isnan(iyy) && ~isnan(izz)
         throwInvalidInertia('triangle inequality violated: iyy + izz < ixx');
     end
 end
+
 if ~isnan(ixx) && ~isnan(iyy) && ~isnan(izz) && ...
         ~isnan(ixy) && ~isnan(ixz) && ~isnan(iyz)
     I = [ixx ixy ixz;
@@ -356,7 +373,7 @@ if ~isnan(ixx) && ~isnan(iyy) && ~isnan(izz) && ...
         ixz iyz izz];
     atol = 1e-10;
     rtol = 1e-8;
-    tol_PSD = atol + rtol * norm(I,2);
+    tol_PSD = atol + rtol * norm(I, 2);
     lambda = eig(I);
     if min(lambda) < -tol_PSD
         throwInvalidInertia('inertia tensor is not positive semidefinite');
@@ -430,6 +447,55 @@ end
 if isinf(val)
     throwInvalidParameter(sprintf('%s must be finite', path));
 end
+end
+
+function validateAlternative(vehicle)
+%validateAlternative Validate the alternative load configuration.
+
+if ~isfield(vehicle.load_configurations, 'alternative')
+    return;
+end
+alt = vehicle.load_configurations.alternative;
+if ~isstruct(alt) || ~isscalar(alt)
+    throwInvalidJSON('load_configurations.alternative must be a scalar struct');
+end
+if ~isfield(alt, 'mass')
+    throwInvalidJSON('Missing required field: load_configurations.alternative.mass');
+end
+checkNumericScalar(alt.mass, 'load_configurations.alternative.mass');
+if isnan(alt.mass)
+    throwInvalidParameter('load_configurations.alternative.mass must not be NaN');
+end
+if alt.mass <= 0
+    throwInvalidParameter('load_configurations.alternative.mass must be positive');
+end
+if ~isfield(alt, 'cg_offset')
+    throwInvalidJSON('Missing required field: load_configurations.alternative.cg_offset');
+end
+cg = alt.cg_offset;
+if ~isnumeric(cg)
+    throwInvalidJSON('load_configurations.alternative.cg_offset must be numeric');
+end
+if numel(cg) ~= 3
+    throwInvalidJSON('load_configurations.alternative.cg_offset must have 3 components');
+end
+for i = 1:3
+    if isnan(cg(i))
+        throwInvalidParameter(sprintf( ...
+            'load_configurations.alternative.cg_offset(%d) must not be NaN', i));
+    end
+    if isinf(cg(i))
+        throwInvalidParameter(sprintf( ...
+            'load_configurations.alternative.cg_offset(%d) must be finite', i));
+    end
+end
+if ~isfield(alt, 'inertia')
+    throwInvalidJSON('Missing required field: load_configurations.alternative.inertia');
+end
+if ~isstruct(alt.inertia) || ~isscalar(alt.inertia)
+    throwInvalidJSON('load_configurations.alternative.inertia must be a struct');
+end
+validateInertiaStruct(alt.inertia);
 end
 
 function validatePresence(vehicle)
