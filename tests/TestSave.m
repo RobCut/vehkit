@@ -98,5 +98,31 @@ classdef TestSave < matlab.unittest.TestCase
             testCase.verifyEqual(v2.tyre.parameters.PCX1, 1.5, 'AbsTol', 1e-12);
             testCase.verifyEqual(v2.tyre.parameters.PDY1, 1.2, 'AbsTol', 1e-12);
         end
+
+        function test_save_round_trip_absent_null_zero(testCase)
+            %test_save_round_trip_absent_null_zero Verify that absent, null (NaN),
+            %   and zero-valued data remain distinct through the round-trip.
+            filePath = fullfile(testCase.TempFolder, 'roundtrip.json');
+            v = testCase.ValidVehicle;
+            % Set up: absent (ixz and iyz not in fixture), null (cg_height = NaN),
+            % zero (ixy = 0)
+            testCase.assertFalse(isfield(v.load_configurations.reference.inertia, 'ixz'));
+            testCase.assertFalse(isfield(v.load_configurations.reference.inertia, 'iyz'));
+            v.geometry.cg_height = NaN;
+            v.load_configurations.reference.inertia.ixy = 0;
+            vehkit.save(v, filePath);
+            text = fileread(filePath);
+            testCase.verifyTrue(contains(text, '"cg_height": null'));
+            testCase.verifyTrue(contains(text, '"ixy": 0'));
+            v2 = vehkit.load(filePath);
+            % null preserved
+            testCase.verifyTrue(isnan(v2.geometry.cg_height));
+            % zero preserved
+            testCase.verifyEqual(v2.load_configurations.reference.inertia.ixy, 0);
+            testCase.verifyFalse(isnan(v2.load_configurations.reference.inertia.ixy));
+            % absent preserved
+            testCase.verifyFalse(isfield(v2.load_configurations.reference.inertia, 'ixz'));
+            testCase.verifyFalse(isfield(v2.load_configurations.reference.inertia, 'iyz'));
+        end
     end
 end

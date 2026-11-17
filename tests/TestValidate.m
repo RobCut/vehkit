@@ -739,5 +739,24 @@ classdef TestValidate < matlab.unittest.TestCase
             v.load_configurations.reference.mass = true;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
         end
+
+        function test_validate_tyre_null_in_parameters(testCase)
+            %test_validate_tyre_null_in_parameters Verify that a null value
+            %   inside tyre.parameters produces vehkit:invalidJSONStructure
+            %   (SCHEMA §7), not invalidParameter.
+            here = fileparts(mfilename('fullpath'));
+            fixture = fullfile(here, 'fixtures', 'invalid_tyre_null.json');
+            v = vehkit.load(fixture);
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_tyre_model_null(testCase)
+            %test_validate_tyre_model_null Verify that a null tyre.model produces
+            %   vehkit:invalidJSONStructure (SCHEMA §4.2: null supplied for a
+            %   string field is a structural error).
+            v = testCase.ValidVehicle;
+            v.tyre = struct('model', [], 'parameters', struct('PCX1', 1.5));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
     end
 end

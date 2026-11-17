@@ -569,6 +569,9 @@ elseif iscell(params)
         checkTyreParameters(params{i}, sprintf('%s{%d}', path, i));
     end
 elseif isnumeric(params) || islogical(params)
+    if isempty(params)
+        throwInvalidJSON(sprintf('%s contains a null value', path));
+    end
     if any(~isfinite(params(:)))
         throwInvalidParameter(sprintf('%s contains non-finite values', path));
     end

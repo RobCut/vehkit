@@ -24,5 +24,12 @@ catch cause
     throw(baseException);
 end
 
-vehicle = vehkit.internal.replaceEmptyWithNaN(vehicle);
+if isfield(vehicle, 'tyre')
+    tyreRaw = vehicle.tyre;
+    vehicle = rmfield(vehicle, 'tyre');
+    vehicle = vehkit.internal.replaceEmptyWithNaN(vehicle);
+    vehicle.tyre = tyreRaw;
+else
+    vehicle = vehkit.internal.replaceEmptyWithNaN(vehicle);
+end
 end
