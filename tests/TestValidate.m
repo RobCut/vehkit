@@ -606,5 +606,74 @@ classdef TestValidate < matlab.unittest.TestCase
                 'ixy', 100, 'ixz', 0, 'iyz', 0));
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidInertia');
         end
+
+        function test_missing_data_distinction(testCase)
+            %test_missing_data_distinction Verify the distinction between absent
+            %   and explicitly unknown data: absent produces
+            %   vehkit:invalidJSONStructure, explicitly unknown produces
+            %   vehkit:missingData when a calculation requires it.
+            v = testCase.ValidVehicle;
+            vAbsent = v;
+            vAbsent.geometry = rmfield(vAbsent.geometry, 'cg_height');
+            testCase.verifyError(@() vehkit.validate(vAbsent), 'vehkit:invalidJSONStructure');
+            vUnknown = v;
+            vUnknown.geometry.cg_height = NaN;
+            vUnknown = vehkit.validate(vUnknown);
+            testCase.verifyError( ...
+                @() vehkit.geometry.wheelCentresStrict(vUnknown), ...
+                'vehkit:missingData');
+        end
+
+        function test_validate_tyre_valid(testCase)
+            %test_validate_tyre_valid Verify that a well-formed tyre block is
+            %   accepted.
+            v = testCase.ValidVehicle;
+            v.tyre = struct( ...
+                'model', 'MF61', ...
+                'parameters', struct('PCX1', 1.5, 'PDY1', 1.2));
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_tyre_model_missing(testCase)
+            %test_validate_tyre_model_missing Verify that a missing tyre.model
+            %   produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.tyre = struct('parameters', struct('PCX1', 1.5));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_tyre_model_empty(testCase)
+            %test_validate_tyre_model_empty Verify that an empty tyre.model
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.tyre = struct('model', '', 'parameters', struct('PCX1', 1.5));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_tyre_parameters_missing(testCase)
+            %test_validate_tyre_parameters_missing Verify that a missing
+            %   tyre.parameters produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.tyre = struct('model', 'MF61');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_tyre_parameters_nan(testCase)
+            %test_validate_tyre_parameters_nan Verify that a NaN value inside
+            %   tyre.parameters produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.tyre = struct('model', 'MF61', ...
+                'parameters', struct('PCX1', NaN));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_tyre_parameters_inf(testCase)
+            %test_validate_tyre_parameters_inf Verify that an Inf value inside
+            %   tyre.parameters produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.tyre = struct('model', 'MF61', ...
+                'parameters', struct('PCX1', Inf));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
     end
 end

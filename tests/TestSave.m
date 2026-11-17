@@ -81,5 +81,22 @@ classdef TestSave < matlab.unittest.TestCase
             testCase.verifyEqual(v2.axles{1}.x, 1.3, 'AbsTol', 1e-12);
             testCase.verifyEqual(v2.axles{2}.x, -1.3, 'AbsTol', 1e-12);
         end
+
+        function test_save_tyre_round_trip(testCase)
+            %test_save_tyre_round_trip Verify that the tyre block is preserved
+            %   through load-validate-save-load-validate.
+            here = fileparts(mfilename('fullpath'));
+            repoRoot = fileparts(here);
+            baseFixture = fullfile(repoRoot, 'tests', 'fixtures', 'minimal_valid.json');
+            v = vehkit.validate(vehkit.load(baseFixture));
+            v.tyre = struct('model', 'MF61', ...
+                'parameters', struct('PCX1', 1.5, 'PDY1', 1.2));
+            filePath = fullfile(testCase.TempFolder, 'tyre.json');
+            vehkit.save(v, filePath);
+            v2 = vehkit.validate(vehkit.load(filePath));
+            testCase.verifyEqual(v2.tyre.model, 'MF61');
+            testCase.verifyEqual(v2.tyre.parameters.PCX1, 1.5, 'AbsTol', 1e-12);
+            testCase.verifyEqual(v2.tyre.parameters.PDY1, 1.2, 'AbsTol', 1e-12);
+        end
     end
 end

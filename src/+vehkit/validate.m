@@ -26,6 +26,7 @@ validateIdentifiers(vehicle);
 validateOrdering(vehicle);
 validateInertia(vehicle);
 validateAlternative(vehicle);
+validateTyre(vehicle);
 end
 
 function validateSchemaVersion(vehicle)
@@ -496,6 +497,64 @@ if ~isstruct(alt.inertia) || ~isscalar(alt.inertia)
     throwInvalidJSON('load_configurations.alternative.inertia must be a struct');
 end
 validateInertiaStruct(alt.inertia);
+end
+
+function validateTyre(vehicle)
+%validateTyre Validate the optional tyre block.
+
+if ~isfield(vehicle, 'tyre')
+    return;
+end
+tyre = vehicle.tyre;
+if ~isstruct(tyre) || ~isscalar(tyre)
+    throwInvalidJSON('tyre must be a scalar struct');
+end
+if ~isfield(tyre, 'model')
+    throwInvalidJSON('Missing required field: tyre.model');
+end
+if ~(ischar(tyre.model) || isstring(tyre.model))
+    throwInvalidJSON('tyre.model must be a string');
+end
+model = string(tyre.model);
+if strlength(model) == 0
+    throwInvalidParameter('tyre.model must not be empty');
+end
+if ~isfield(tyre, 'parameters')
+    throwInvalidJSON('Missing required field: tyre.parameters');
+end
+if ~isstruct(tyre.parameters) || ~isscalar(tyre.parameters)
+    throwInvalidJSON('tyre.parameters must be a scalar struct');
+end
+checkTyreParameters(tyre.parameters, 'tyre.parameters');
+end
+
+function checkTyreParameters(params, path)
+%checkTyreParameters Recursively verify that no non-finite values exist.
+%   Null values in the JSON become NaN after vehkit.load, so checking for
+%   non-finite values is equivalent to rejecting nulls, which SCHEMA
+%   §3.1 prohibits anywhere inside tyre.parameters.
+if isstruct(params)
+    if ~isscalar(params)
+        throwInvalidParameter(sprintf('%s must be a scalar struct', path));
+    end
+    fields = fieldnames(params);
+    for i = 1:numel(fields)
+        name = fields{i};
+        checkTyreParameters(params.(name), sprintf('%s.%s', path, name));
+    end
+elseif iscell(params)
+    for i = 1:numel(params)
+        checkTyreParameters(params{i}, sprintf('%s{%d}', path, i));
+    end
+elseif isnumeric(params) || islogical(params)
+    if any(~isfinite(params(:)))
+        throwInvalidParameter(sprintf('%s contains non-finite values', path));
+    end
+elseif ischar(params) || isstring(params)
+    % strings allowed
+else
+    throwInvalidParameter(sprintf('%s has unsupported type', path));
+end
 end
 
 function validatePresence(vehicle)

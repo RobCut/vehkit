@@ -154,7 +154,9 @@ The following features are included:
 
 - Optional tyre representation at vehicle level.
 - In v0.1, the vehicle supports a single tyre model identifier and one uninterpreted parameter block shared by all wheels.
-- Model-specific parameter validation is outside the scope of v0.1 and belongs to the corresponding tyre-model project.
+- When the `tyre` block is present, `tyre.model` must be a non-empty string and `tyre.parameters` must be a scalar struct.
+- All numerical values inside `tyre.parameters`, including values nested within objects or arrays, must be finite. `NaN`, `Inf` and `-Inf` are invalid and produce `vehkit:invalidParameter`.
+- Model-specific parameter validation (interpretation of `PCX1`, `PDY1`, etc.) is outside the scope of v0.1 and belongs to the corresponding tyre-model project.
 
 **Data management**
 
@@ -314,7 +316,7 @@ The initial release is considered complete when both sets of criteria below are 
 
 15. Invalid parameter values and out-of-range values produce `vehkit:invalidParameter`.
 
-16. At least one test verifies the handling of missing required data, distinguishing absent from explicitly unknown data.
+16. At least one test verifies the distinction between absent and explicitly unknown data: absent mandatory fields produce `vehkit:invalidJSONStructure` (via `validatePresence`), while explicitly unknown values in fields that a calculation requires produce `vehkit:missingData` (via calculation functions such as `vehkit.geometry.wheelCentresStrict`).
 
 17. JSON loading, saving and reloading preserve all assigned data within the tolerances of §1.7.
 
@@ -322,9 +324,9 @@ The initial release is considered complete when both sets of criteria below are 
 
 19. Schema version validation is tested: supported versions are loaded successfully; formally valid but unsupported versions produce `vehkit:unsupportedSchemaVersion`; missing or malformed versions produce `vehkit:invalidJSONStructure`.
 
-20. Calculations requiring explicitly unknown data produce `vehkit:missingData`, with a message distinguishing unknown data from absent data.
+20. Calculations requiring explicitly unknown data produce `vehkit:missingData`, with an error message that states the field is explicitly unknown. Absent fields are caught earlier by `validatePresence` and produce `vehkit:invalidJSONStructure`; the distinction between absent and unknown is realized through the two different error identifiers, not through a single function.
 
-21. The optional `tyre` block is loaded and preserved as-is, including in the round-trip.
+21. The optional `tyre` block is loaded, validated for structural and finiteness constraints, preserved as-is (no model-specific interpretation), and round-trips through `load` and `save`. A non-empty `tyre.model` is required; `tyre.parameters` must be a scalar struct with only finite numerical values (no `null`, no `NaN`, no `Inf`).
 
 22. `DATA.md` documents the sources and references used for both reference vehicles.
 
