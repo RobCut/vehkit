@@ -364,6 +364,8 @@ The initial release is considered complete when both sets of criteria below are 
 
 5. Aerodynamic force direction is verified for both positive and negative lift coefficients.
 
+6. A JSON scanner rejects duplicate keys, invalid key names, and forbidden bare tokens with `vehkit:invalidJSONStructure`, covering the cases listed in SCHEMA §3.1.
+
 ### 1.7. Numerical Tolerances
 
 The following numerical tolerances are used throughout the MATLAB implementation and automated tests.

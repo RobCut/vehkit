@@ -1,5 +1,7 @@
 ﻿# vehkit
 
+[![MATLAB Tests](https://github.com/RobCut/vehkit/actions/workflows/test.yml/badge.svg)](https://github.com/RobCut/vehkit/actions/workflows/test.yml)
+
 A MATLAB toolbox for vehicle data management: a JSON schema for vehicle
 definitions, a strict validator with identifiable error identifiers, and
 derived geometric properties.
@@ -74,7 +76,8 @@ and mutual exclusivity between geometry definition methods.
 
 ## Results
 
-- 114 automated tests passing (`runtests('tests')`).
+- 122 automated tests passing (`runtests('tests')`), plus continuous
+  integration on GitHub Actions.
 - Two reference vehicles in `data/`: a generic segment C road car
   (1385 kg, 2.65 m wheelbase) and a Formula SAE-style single-seater
   (280 kg, 1.55 m wheelbase).
@@ -92,13 +95,9 @@ the v0.1.0 release:
 - Individual wheel load distribution within an axle.
 - Semantic validation of tyre parameters (model-specific interpretation
   of PCX1, PDY1, etc.; structural and finiteness validation is done).
-- Rejection of unrecognized fields inside defined blocks.
 - JSON scanner for duplicate keys, invalid key names, and forbidden
   bare tokens (MATLAB's `jsondecode` is permissive, and the current
   loader relies on it).
-- Explicit error identifier for `null` values inside `tyre.parameters`
-  (currently treated as `invalidJSONStructure`, distinguished from
-  non-finite values in the same block).
 
 Road surface is assumed to be flat and horizontal. Loaded radii are the
 values specified in the reference configuration; variations due to static
