@@ -59,3 +59,5 @@ Local reference frames may be introduced when required by individual models. The
 The tire reference frame and its conventions will be documented separately in Project 3, which covers tire modeling using the Magic Formula 6.1 (MF61) and the TYDEX coordinate system.
 
 **Interface with external software.** Adams, Ansys and SolidWorks can use a global frame with a different origin. When exporting to or importing from these tools, apply a rigid translation of `h_CG` along the global z-axis. The vertical axis (+z up) is consistent with Adams and Ansys; SolidWorks can be configured to Z-up or rotated on export.
+
+Regarding longitudinal direction: Adams/Car typically uses the x-axis pointing rearward for vehicle bodies, while vehkit uses x positive forward. When exporting to or importing from Adams/Car, apply a 180° rotation about the z-axis (or flip the x component) in addition to the origin translation. Ansys and SolidWorks have no built-in vehicle convention and can be aligned freely.

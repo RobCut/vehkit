@@ -157,6 +157,7 @@ The following features are included:
 - In v0.1, the vehicle supports a single tyre model identifier and one uninterpreted parameter block shared by all wheels.
 - When the `tyre` block is present, `tyre.model` must be a non-empty string and `tyre.parameters` must be a scalar struct.
 - All numerical values inside `tyre.parameters`, including values nested within objects or arrays, must be finite. `NaN`, `Inf` and `-Inf` are invalid and produce `vehkit:invalidParameter`.
+- A `null` value supplied as a scalar inside `tyre.parameters` produces `vehkit:invalidJSONStructure`; a `null` inside an array produces `vehkit:invalidParameter` because `jsondecode` converts it to `NaN`. This inconsistency is resolved by the JSON scanner planned for the v0.1.0 release.
 - Model-specific parameter validation (interpretation of `PCX1`, `PDY1`, etc.) is outside the scope of v0.1 and belongs to the corresponding tyre-model project.
 
 **Data management**

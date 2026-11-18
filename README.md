@@ -98,6 +98,9 @@ the v0.1.0 release:
 - JSON scanner for duplicate keys, invalid key names, and forbidden
   bare tokens (MATLAB's `jsondecode` is permissive, and the current
   loader relies on it).
+- JSON serialization uses MATLAB's default precision (approximately 15
+  significant digits). Round-trip comparisons in the test suite account
+  for this with the tolerances defined in `docs/DESIGN.md` §1.7.
 
 Road surface is assumed to be flat and horizontal. Loaded radii are the
 values specified in the reference configuration; variations due to static
@@ -123,6 +126,9 @@ To reproduce:
 3. Regenerate the wheel centre plot:
 
     ```run('examples/plot_wheel_centres.m')```
+
+4. Alternatively, run the full test suite via the build tool:
+    ```buildtool test```
 
 The script writes `results/vehicle_plan.png`.
 
