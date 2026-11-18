@@ -112,6 +112,8 @@ classdef TestSave < matlab.unittest.TestCase
             v.load_configurations.reference.inertia.ixy = 0;
             vehkit.save(v, filePath);
             text = fileread(filePath);
+            testCase.assertTrue(isfile(filePath), 'File was not created by save');
+            testCase.assertFalse(isempty(text), 'File is empty');
             testCase.verifyTrue(contains(text, '"cg_height": null'));
             testCase.verifyTrue(contains(text, '"ixy": 0'));
             v2 = vehkit.load(filePath);

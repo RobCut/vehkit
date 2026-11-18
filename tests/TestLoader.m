@@ -35,5 +35,13 @@ classdef TestLoader < matlab.unittest.TestCase
                 @() vehkit.load(badFile), ...
                 'vehkit:invalidJSONStructure');
         end
+
+        function test_load_invalid_root_array(testCase)
+            %test_load_invalid_root_array Verify that a JSON document whose root is
+            %   not an object produces vehkit:invalidJSONStructure.
+            here = fileparts(mfilename('fullpath'));
+            fixture = fullfile(here, 'fixtures', 'invalid_root_array.json');
+            testCase.verifyError(@() vehkit.load(fixture), 'vehkit:invalidJSONStructure');
+        end
     end
 end

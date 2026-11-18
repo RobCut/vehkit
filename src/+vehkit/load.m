@@ -23,6 +23,10 @@ catch cause
     baseException = addCause(baseException, cause);
     throw(baseException);
 end
+if ~isstruct(vehicle)
+    throw(MException('vehkit:invalidJSONStructure', ...
+        'JSON root must be an object'));
+end
 
 if isfield(vehicle, 'tyre')
     tyreRaw = vehicle.tyre;
@@ -31,5 +35,4 @@ if isfield(vehicle, 'tyre')
     vehicle.tyre = tyreRaw;
 else
     vehicle = vehkit.internal.replaceEmptyWithNaN(vehicle);
-end
 end

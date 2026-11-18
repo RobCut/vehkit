@@ -808,5 +808,14 @@ classdef TestValidate < matlab.unittest.TestCase
             v.axles{1}.wheels{1}.unknown = 1;
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
         end
+
+        function test_validate_reference_inertia_missing(testCase)
+            %test_validate_reference_inertia_missing Verify that a missing
+            %   reference.inertia produces vehkit:invalidJSONStructure (not a
+            %   native MATLAB error).
+            v = testCase.ValidVehicle;
+            v.load_configurations.reference = rmfield(v.load_configurations.reference, 'inertia');
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
     end
 end
