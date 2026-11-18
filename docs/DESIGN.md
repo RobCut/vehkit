@@ -145,6 +145,7 @@ The following features are included:
 - The CG displacement is defined as the alternative CG position minus the reference CG position, expressed in the global vehicle reference frame.
 - The alternative inertia tensor is referred to its own CG, with axes parallel to the global reference axes.
 - The alternative CG height is derived from its vertical displacement relative to the reference configuration.
+- When the reference CG height is known, the derived alternative CG height must be positive. If the reference CG height is unknown (`NaN`), this check is skipped.
 - Loaded radii remain those specified for the reference configuration in v0.1. This is an approximation that neglects changes in tyre deformation due to variations in static wheel loads.
 - Variations in body height and suspension position between load configurations are not modelled in v0.1.
 - Automatic CG displacement calculation from individual component masses or load distributions is outside the scope of v0.1.

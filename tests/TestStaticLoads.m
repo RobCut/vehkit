@@ -80,5 +80,48 @@ classdef TestStaticLoads < matlab.unittest.TestCase
                 @() vehkit.staticLoads.axles(testCase.ThreeAxleVehicle), ...
                 'vehkit:unsupportedAxleCount');
         end
+
+        function test_static_load_equivalent_to_direct(testCase)
+            %test_static_load_equivalent_to_direct Verify that the static_load_based
+            %   representation of the road car reconstructs the same axle positions
+            %   as the direct representation.
+            v = testCase.RoadCar;
+            d = vehkit.geometry.cgToAxles(v);
+
+            for k = 1:2
+                v.axles{k} = rmfield(v.axles{k}, 'x');
+            end
+            v.geometry.method = 'static_load_based';
+            v.geometry.wheelbase = 2.65;
+            v.geometry.front_weight_distribution = 1.59 / 2.65;
+            v = vehkit.validate(v);
+
+            s = vehkit.geometry.cgToAxles(v);
+            testCase.verifyEqual(s, d, 'AbsTol', 1e-10);
+        end
+
+        function test_static_loads_moment_equilibrium_road_car(testCase)
+            %test_static_loads_moment_equilibrium_road_car Verify that the axle
+            %   loads satisfy moment equilibrium about the CG.
+            F = vehkit.staticLoads.axles(testCase.RoadCar);
+            x = vehkit.geometry.cgToAxles(testCase.RoadCar);
+            testCase.verifyEqual(F(1)*x(1) + F(2)*x(2), 0, 'AbsTol', 1e-8);
+        end
+
+        function test_static_loads_moment_equilibrium_race_car(testCase)
+            %test_static_loads_moment_equilibrium_race_car Verify moment equilibrium
+            %   for the race car.
+            F = vehkit.staticLoads.axles(testCase.RaceCar);
+            x = vehkit.geometry.cgToAxles(testCase.RaceCar);
+            testCase.verifyEqual(F(1)*x(1) + F(2)*x(2), 0, 'AbsTol', 1e-8);
+        end
+
+        function test_static_loads_weight_sum_race_car(testCase)
+            %test_static_loads_weight_sum_race_car Verify that the axle loads sum
+            %   to the total weight for the race car.
+            F = vehkit.staticLoads.axles(testCase.RaceCar);
+            W = testCase.RaceCar.load_configurations.reference.mass * 9.80665;
+            testCase.verifyEqual(sum(F), W, 'RelTol', 1e-10);
+        end
     end
 end

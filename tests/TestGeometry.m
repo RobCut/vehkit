@@ -7,6 +7,7 @@ classdef TestGeometry < matlab.unittest.TestCase
         MultiAxleVehicle
         SingleAxleVehicle
         StaticLoadVehicle
+        ThreeAxleVehicle
     end
 
     methods (TestClassSetup)
@@ -19,6 +20,8 @@ classdef TestGeometry < matlab.unittest.TestCase
             testCase.SingleAxleVehicle = vehkit.validate(vehkit.load(singleFixture));
             staticFixture = fullfile(here, 'fixtures', 'minimal_static_load.json');
             testCase.StaticLoadVehicle = vehkit.validate(vehkit.load(staticFixture));
+            threeFixture = fullfile(here, 'fixtures', 'minimal_three_axle.json');
+            testCase.ThreeAxleVehicle = vehkit.validate(vehkit.load(threeFixture));
         end
     end
 
@@ -129,6 +132,40 @@ classdef TestGeometry < matlab.unittest.TestCase
             v.axles{1}.wheels{1}.loaded_radius = NaN;
             v = vehkit.validate(v);
             testCase.verifyError(@() vehkit.geometry.wheelCentresStrict(v), 'vehkit:missingData');
+        end
+
+        function test_wheelbase_three_axle(testCase)
+            %test_wheelbase_three_axle Verify the wheelbase of a
+            %   three-axle direct vehicle.
+            wb = vehkit.geometry.wheelbase(testCase.ThreeAxleVehicle);
+            testCase.verifyEqual(wb, 3.3, 'AbsTol', 1e-12);
+        end
+
+        function test_cg_to_axles_three_axle(testCase)
+            %test_cg_to_axles_three_axle Verify the signed CG-to-axle
+            %   distances of a three-axle direct vehicle.
+            ca = vehkit.geometry.cgToAxles(testCase.ThreeAxleVehicle);
+            testCase.verifyEqual(ca, [1.6; 0.0; -1.7], 'AbsTol', 1e-12);
+        end
+
+        function test_track_widths_three_axle(testCase)
+            %test_track_widths_three_axle Verify the track widths of a
+            %   three-axle direct vehicle.
+            tw = vehkit.geometry.trackWidths(testCase.ThreeAxleVehicle);
+            testCase.verifyEqual(tw, [1.5; 1.5; 1.5], 'AbsTol', 1e-12);
+        end
+
+        function test_wheel_centres_three_axle(testCase)
+            %test_wheel_centres_three_axle Verify the six wheel centres
+            %   of a three-axle direct vehicle.
+            wc = vehkit.geometry.wheelCentres(testCase.ThreeAxleVehicle);
+            expected = [ 1.6,  0.75, -0.05;
+                1.6, -0.75, -0.05;
+                0.0,  0.75, -0.05;
+                0.0, -0.75, -0.05;
+                -1.7,  0.75, -0.05;
+                -1.7, -0.75, -0.05];
+            testCase.verifyEqual(wc, expected, 'AbsTol', 1e-12);
         end
     end
 end

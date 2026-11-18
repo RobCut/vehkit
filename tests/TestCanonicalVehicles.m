@@ -63,6 +63,38 @@ classdef TestCanonicalVehicles < matlab.unittest.TestCase
             tw = vehkit.geometry.trackWidths(testCase.RaceCar);
             testCase.verifyEqual(tw, [1.20; 1.18], 'AbsTol', 1e-12);
         end
+
+        function test_road_car_cg_to_axles(testCase)
+            %test_road_car_cg_to_axles Verify signed CG-to-axle distances.
+            ca = vehkit.geometry.cgToAxles(testCase.RoadCar);
+            testCase.verifyEqual(ca, [1.06; -1.59], 'AbsTol', 1e-12);
+        end
+
+        function test_road_car_wheel_centres(testCase)
+            %test_road_car_wheel_centres Verify the four wheel centre coordinates.
+            wc = vehkit.geometry.wheelCentres(testCase.RoadCar);
+            expected = [ 1.06,  0.765, -0.25;
+                1.06, -0.765, -0.25;
+                -1.59,  0.755, -0.25;
+                -1.59, -0.755, -0.25];
+            testCase.verifyEqual(wc, expected, 'AbsTol', 1e-12);
+        end
+
+        function test_race_car_cg_to_axles(testCase)
+            %test_race_car_cg_to_axles Verify signed CG-to-axle distances.
+            ca = vehkit.geometry.cgToAxles(testCase.RaceCar);
+            testCase.verifyEqual(ca, [0.85; -0.70], 'AbsTol', 1e-12);
+        end
+
+        function test_race_car_wheel_centres(testCase)
+            %test_race_car_wheel_centres Verify the four wheel centre coordinates.
+            wc = vehkit.geometry.wheelCentres(testCase.RaceCar);
+            expected = [ 0.85,  0.60, -0.12;
+                0.85, -0.60, -0.12;
+                -0.70,  0.59, -0.12;
+                -0.70, -0.59, -0.12];
+            testCase.verifyEqual(wc, expected, 'AbsTol', 1e-12);
+        end
     end
 end
 

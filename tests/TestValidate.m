@@ -609,19 +609,23 @@ classdef TestValidate < matlab.unittest.TestCase
 
         function test_missing_data_distinction(testCase)
             %test_missing_data_distinction Verify the distinction between absent
-            %   and explicitly unknown data: absent produces
-            %   vehkit:invalidJSONStructure, explicitly unknown produces
-            %   vehkit:missingData when a calculation requires it.
+            %   and explicitly unknown data, including the error message text.
             v = testCase.ValidVehicle;
+
             vAbsent = v;
             vAbsent.geometry = rmfield(vAbsent.geometry, 'cg_height');
             testCase.verifyError(@() vehkit.validate(vAbsent), 'vehkit:invalidJSONStructure');
+
             vUnknown = v;
             vUnknown.geometry.cg_height = NaN;
             vUnknown = vehkit.validate(vUnknown);
-            testCase.verifyError( ...
-                @() vehkit.geometry.wheelCentresStrict(vUnknown), ...
-                'vehkit:missingData');
+            try
+                vehkit.geometry.wheelCentresStrict(vUnknown);
+                testCase.verifyFail('wheelCentresStrict did not throw');
+            catch ME
+                testCase.verifyEqual(ME.identifier, 'vehkit:missingData');
+                testCase.verifyMatches(ME.message, 'explicitly unknown');
+            end
         end
 
         function test_validate_tyre_valid(testCase)
@@ -816,6 +820,172 @@ classdef TestValidate < matlab.unittest.TestCase
             v = testCase.ValidVehicle;
             v.load_configurations.reference = rmfield(v.load_configurations.reference, 'inertia');
             testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_alternative_mass_zero(testCase)
+            %test_validate_alternative_mass_zero Verify that zero alternative mass
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 0.0, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_alternative_mass_nan(testCase)
+            %test_validate_alternative_mass_nan Verify that NaN alternative mass
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', NaN, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_alternative_cg_offset_inf(testCase)
+            %test_validate_alternative_cg_offset_inf Verify that Inf in cg_offset
+            %   produces vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0; Inf], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_alternative_inertia_diagonal_negative(testCase)
+            %test_validate_alternative_inertia_diagonal_negative Verify that a
+            %   negative diagonal component in alternative inertia produces
+            %   vehkit:invalidInertia.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', -1, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidInertia');
+        end
+
+        function test_validate_alternative_inertia_triangle_violation(testCase)
+            %test_validate_alternative_inertia_triangle_violation Verify that a
+            %   triangle inequality violation in alternative inertia produces
+            %   vehkit:invalidInertia.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 1, 'iyy', 1, 'izz', 100));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidInertia');
+        end
+
+        function test_validate_alternative_unknown_field(testCase)
+            %test_validate_alternative_unknown_field Verify that an unrecognized
+            %   field in alternative produces vehkit:invalidJSONStructure.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.05; 0.0; -0.02], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750), ...
+                'unknown', 1);
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidJSONStructure');
+        end
+
+        function test_validate_alternative_cg_below_road(testCase)
+            %test_validate_alternative_cg_below_road Verify that an alternative
+            %   CG below the road surface (cg_height + cg_offset(3) <= 0) produces
+            %   vehkit:invalidParameter.
+            v = testCase.ValidVehicle;
+            v.load_configurations.alternative = struct( ...
+                'mass', 1300.0, ...
+                'cg_offset', [0.0; 0.0; -0.4], ...
+                'inertia', struct('ixx', 480, 'iyy', 1450, 'izz', 1750));
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_fwd_one(testCase)
+            %test_validate_static_load_fwd_one Verify that front_weight_distribution = 1
+            %   produces vehkit:invalidParameter.
+            v = testCase.StaticLoadVehicle;
+            v.geometry.front_weight_distribution = 1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_fwd_negative(testCase)
+            %test_validate_static_load_fwd_negative Verify that a negative
+            %   front_weight_distribution produces vehkit:invalidParameter.
+            v = testCase.StaticLoadVehicle;
+            v.geometry.front_weight_distribution = -0.1;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_fwd_above_one(testCase)
+            %test_validate_static_load_fwd_above_one Verify that
+            %   front_weight_distribution = 1.5 produces vehkit:invalidParameter.
+            v = testCase.StaticLoadVehicle;
+            v.geometry.front_weight_distribution = 1.5;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_wheelbase_zero(testCase)
+            %test_validate_static_load_wheelbase_zero Verify that wheelbase = 0
+            %   produces vehkit:invalidParameter.
+            v = testCase.StaticLoadVehicle;
+            v.geometry.wheelbase = 0;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_static_load_wheelbase_negative(testCase)
+            %test_validate_static_load_wheelbase_negative Verify that a negative
+            %   wheelbase produces vehkit:invalidParameter.
+            v = testCase.StaticLoadVehicle;
+            v.geometry.wheelbase = -2.6;
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:invalidParameter');
+        end
+
+        function test_validate_three_axle_direct_accepted(testCase)
+            %test_validate_three_axle_direct_accepted Verify that a
+            %   three-axle direct vehicle is accepted by validate.
+            here = fileparts(mfilename('fullpath'));
+            fixture = fullfile(here, 'fixtures', 'minimal_three_axle.json');
+            v = vehkit.load(fixture);
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_wheel_canonical_tiebreak_two_ten(testCase)
+            %test_validate_wheel_canonical_tiebreak_two_ten Verify that wheel_2
+            %   precedes wheel_10 when y is identical (numeric suffix, not lexicographic).
+            v = testCase.ValidVehicle;
+            w1 = v.axles{1}.wheels{1};
+            w1.id = 'wheel_2';
+            w2 = v.axles{1}.wheels{2};
+            w2.id = 'wheel_10';
+            w1.y = 0.75; w2.y = 0.75;
+            v.axles{1}.wheels = {w1; w2};
+            testCase.verifyWarningFree(@() vehkit.validate(v));
+        end
+
+        function test_validate_wheel_canonical_tiebreak_ten_two(testCase)
+            %test_validate_wheel_canonical_tiebreak_ten_two Verify that wheel_10
+            %   preceding wheel_2 when y is identical produces
+            %   vehkit:wheelOrderMismatch.
+            v = testCase.ValidVehicle;
+            w1 = v.axles{1}.wheels{1};
+            w1.id = 'wheel_10';
+            w2 = v.axles{1}.wheels{2};
+            w2.id = 'wheel_2';
+            w1.y = 0.75; w2.y = 0.75;
+            v.axles{1}.wheels = {w1; w2};
+            testCase.verifyError(@() vehkit.validate(v), 'vehkit:wheelOrderMismatch');
+        end
+
+        function test_validate_tyre_parameters_array_of_structs(testCase)
+            %test_validate_tyre_parameters_array_of_structs Verify that an array of
+            %   structs inside tyre.parameters is accepted when all values are finite.
+            v = testCase.ValidVehicle;
+            p = struct('value', {1.5, 2.5, 3.5});
+            v.tyre = struct('model', 'MF61', 'parameters', struct('array', p));
+            testCase.verifyWarningFree(@() vehkit.validate(v));
         end
     end
 end

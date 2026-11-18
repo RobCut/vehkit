@@ -19,8 +19,8 @@ end
 
 if numel(vehicle.axles) ~= 2
     throw(MException('vehkit:unsupportedAxleCount', ...
-        sprintf('static axle load calculation requires exactly 2 axles, found %d', ...
-        numel(vehicle.axles))));
+        'static axle load calculation requires exactly 2 axles, found %d', ...
+        numel(vehicle.axles)));
 end
 
 g = 9.80665;

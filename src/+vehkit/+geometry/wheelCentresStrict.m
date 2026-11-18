@@ -21,7 +21,7 @@ for k = 1:numel(vehicle.axles)
     for j = 1:numel(vehicle.axles{k}.wheels)
         if isnan(vehicle.axles{k}.wheels{j}.loaded_radius)
             throw(MException('vehkit:missingData', ...
-                sprintf('axles{%d}.wheels{%d}.loaded_radius is explicitly unknown', k, j)));
+                'axles{%d}.wheels{%d}.loaded_radius is explicitly unknown', k, j));
         end
     end
 end

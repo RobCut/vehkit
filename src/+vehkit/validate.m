@@ -513,6 +513,12 @@ for i = 1:3
             'load_configurations.alternative.cg_offset(%d) must be finite', i));
     end
 end
+if ~isnan(vehicle.geometry.cg_height)
+    if vehicle.geometry.cg_height + cg(3) <= 0
+        throwInvalidParameter( ...
+            'load_configurations.alternative CG height must be positive');
+    end
+end
 if ~isfield(alt, 'inertia')
     throwInvalidJSON('Missing required field: load_configurations.alternative.inertia');
 end
@@ -557,13 +563,16 @@ function checkTyreParameters(params, path)
 %   non-finite values is equivalent to rejecting nulls, which SCHEMA
 %   §3.1 prohibits anywhere inside tyre.parameters.
 if isstruct(params)
-    if ~isscalar(params)
-        throwInvalidParameter(sprintf('%s must be a scalar struct', path));
-    end
-    fields = fieldnames(params);
-    for i = 1:numel(fields)
-        name = fields{i};
-        checkTyreParameters(params.(name), sprintf('%s.%s', path, name));
+    if isscalar(params)
+        fields = fieldnames(params);
+        for i = 1:numel(fields)
+            name = fields{i};
+            checkTyreParameters(params.(name), sprintf('%s.%s', path, name));
+        end
+    else
+        for k = 1:numel(params)
+            checkTyreParameters(params(k), sprintf('%s{%d}', path, k));
+        end
     end
 elseif iscell(params)
     for i = 1:numel(params)

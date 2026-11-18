@@ -1,0 +1,43 @@
+{
+    "schema_version": "0.1",
+    "geometry": {
+        "method": "direct",
+        "cg_height": 0.35
+    },
+    "axles": [
+        {
+            "id": "axle_1",
+            "x": 1.6,
+            "wheels": [
+                {"id": "wheel_1", "y": 0.75, "loaded_radius": 0.30},
+                {"id": "wheel_2", "y": -0.75, "loaded_radius": 0.30}
+            ]
+        },
+        {
+            "id": "axle_2",
+            "x": 0.0,
+            "wheels": [
+                {"id": "wheel_3", "y": 0.75, "loaded_radius": 0.30},
+                {"id": "wheel_4", "y": -0.75, "loaded_radius": 0.30}
+            ]
+        },
+        {
+            "id": "axle_3",
+            "x": -1.7,
+            "wheels": [
+                {"id": "wheel_5", "y": 0.75, "loaded_radius": 0.30},
+                {"id": "wheel_6", "y": -0.75, "loaded_radius": 0.30}
+            ]
+        }
+    ],
+    "load_configurations": {
+        "reference": {
+            "mass": 1500.0,
+            "inertia": {
+                "ixx": 600.0,
+                "iyy": 2000.0,
+                "izz": 2400.0
+            }
+        }
+    }
+}
