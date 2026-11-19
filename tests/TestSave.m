@@ -173,6 +173,36 @@ classdef TestSave < matlab.unittest.TestCase
                 testCase.verifyStructAlmostEqual(v2, v1, name, 1e-8, 1e-10);
             end
         end
+
+        function test_save_raw_static_load(testCase)
+            %test_save_raw_static_load Verify that saving a raw static_load_based
+            %   vehicle (not yet passed through validate) works end-to-end.
+            here = fileparts(mfilename('fullpath'));
+            fixture = fullfile(here, 'fixtures', 'minimal_static_load.json');
+            v = vehkit.load(fixture);
+            filePath = fullfile(testCase.TempFolder, 'raw_static.json');
+
+            testCase.verifyWarningFree(@() vehkit.save(v, filePath));
+            testCase.verifyTrue(isfile(filePath));
+
+            v2 = vehkit.validate(vehkit.load(filePath));
+            testCase.verifyEqual(v2.axles{1}.x, 1.3, 'AbsTol', 1e-12);
+            testCase.verifyEqual(v2.axles{2}.x, -1.3, 'AbsTol', 1e-12);
+        end
+
+        function test_save_tyre_parameters_array(testCase)
+            %test_save_tyre_parameters_array Verify that an array of structs in
+            %   tyre.parameters survives round-trip.
+            filePath = fullfile(testCase.TempFolder, 'tyre_array.json');
+            v = testCase.ValidVehicle;
+            v.tyre = struct('model', 'MF61', ...
+                'parameters', struct('array', struct('value', {1.5, 2.5, 3.5})));
+            vehkit.save(v, filePath);
+            v2 = vehkit.validate(vehkit.load(filePath));
+            testCase.verifyEqual(numel(v2.tyre.parameters.array), 3);
+            testCase.verifyEqual(v2.tyre.parameters.array(1).value, 1.5, 'AbsTol', 1e-12);
+            testCase.verifyEqual(v2.tyre.parameters.array(3).value, 3.5, 'AbsTol', 1e-12);
+        end
     end
 
     methods (Access = private)

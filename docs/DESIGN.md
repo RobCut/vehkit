@@ -190,19 +190,19 @@ The following features are included:
 - One minimal subsystem implementation as a test case: constant-coefficient aerodynamics.
 - Aerodynamic calculations must require only the data needed by each individual function.
 - The aerodynamic block stores the following independent parameters:
-  - Drag coefficient (`Cd`).
-  - Lift coefficient (`Cl`).
+  - Drag coefficient (`cd`).
+  - Lift coefficient (`cl`).
   - Reference area (`reference_area`).
 
-- The lift coefficient (`Cl`) follows the global vertical axis convention:
-  - Positive `Cl` produces an aerodynamic force in the positive global vertical direction (`+z`).
-  - Negative `Cl` produces an aerodynamic force in the negative global vertical direction (`-z`), corresponding to downforce.
+- The lift coefficient (`cl`) follows the global vertical axis convention:
+  - Positive `cl` produces an aerodynamic force in the positive global vertical direction (`+z`).
+  - Negative `cl` produces an aerodynamic force in the negative global vertical direction (`-z`), corresponding to downforce.
 
-- The product of drag coefficient and reference area (`CdA`) is a derived quantity and is not stored as an independent parameter.
+- The product of drag coefficient and reference area (`cd * reference_area`) is a derived quantity and is not stored as an independent parameter.
 
-- Aerodynamic drag requires `Cd` and `reference_area`.
+- Aerodynamic drag requires `cd` and `reference_area`.
 
-- Downforce requires `Cl` and `reference_area`.
+- Downforce requires `cl` and `reference_area`.
 
 - Air density and relative airspeed are operational inputs supplied to the aerodynamic calculation functions, not vehicle properties.
 

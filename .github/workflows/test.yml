@@ -17,7 +17,7 @@ jobs:
       - name: Set up MATLAB
         uses: matlab-actions/setup-matlab@v3
         with:
-          release: latest
+          release: R2026b
 
       - name: Run buildtool test
         uses: matlab-actions/run-build@v3

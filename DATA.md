@@ -16,17 +16,18 @@ A generic segment C passenger car (Golf/Focus class, front-wheel drive).
 | Parameter | Value | Origin |
 |---|---|---|
 | Wheelbase | 2.65 m | Typical segment C value, in the range of published vehicle models |
+| Front weight distribution | 0.60 | Typical front-wheel-drive layout |
 | Front track | 1.53 m | Typical segment C value |
 | Rear track | 1.51 m | Typical segment C value |
 | CG height | 0.56 m | Typical for a passenger car; Previati et al. 2024 (World Electric Vehicle Journal 15, 266) provide empirical estimates for electric vehicles |
-| Reference mass | 1385 kg | Approximate kerb mass ~1300 kg (fluids at nominal), plus 75 kg driver and 10 kg fuel top-up |
+| Reference mass | 1385 kg | Kerb mass (European definition, with 75 kg driver and 90% fuel) ~1375 kg, plus a small fuel top-up to 1385 kg |
 | Inertia Ixx | 470 kg·m² | Estimated from typical roll inertia of a 1.4-tonne passenger car |
 | Inertia Iyy | 1900 kg·m² | Estimated from typical pitch inertia |
 | Inertia Izz | 2200 kg·m² | Estimated from typical yaw inertia |
 | Loaded radius | 0.31 m | Typical for a 205/55 R16 tyre under static load |
 
-Inertia values satisfy the triangle inequalities and are positive
-definite. They are estimated, not measured.
+Diagonal inertia values satisfy the triangle inequalities; off-diagonal
+components are not specified. Values are estimated, not measured.
 
 ## data/race_car.json
 
@@ -35,6 +36,7 @@ A Formula SAE-style single-seater (rear-wheel drive, 10-inch wheels).
 | Parameter | Value | Origin |
 |---|---|---|
 | Wheelbase | 1.55 m | Typical FSAE wheelbase (1.5-1.6 m range in published designs) |
+| Front weight distribution | 0.45 | Typical rear-wheel-drive FSAE layout |
 | Front track | 1.20 m | Typical FSAE front track |
 | Rear track | 1.18 m | Typical FSAE rear track |
 | CG height | 0.32 m | Typical FSAE CG height (0.28-0.35 m range in published designs) |
@@ -44,8 +46,8 @@ A Formula SAE-style single-seater (rear-wheel drive, 10-inch wheels).
 | Inertia Izz | 150 kg·m² | Estimated from typical FSAE yaw inertia |
 | Loaded radius | 0.20 m | Typical for 10-inch FSAE slick under static load |
 
-Inertia values satisfy the triangle inequalities and are positive
-definite. They are estimated within plausible ranges, not measured.
+Diagonal inertia values satisfy the triangle inequalities; off-diagonal
+components are not specified. Values are estimated, not measured.
 
 ## General notes
 
@@ -68,10 +70,12 @@ definite. They are estimated within plausible ranges, not measured.
   https://pypi.org/project/commonroad-vehicle-models/
   Used as a cross-check for segment C dimensions. BSD license (per
   package index metadata).
-- Previati, G., et al. (2024). "Empirical estimation of center of gravity
-  height and moments of inertia for electric vehicles." World Electric
-  Vehicle Journal 15(6), 266. CC BY.
-  Used as a reference for realistic CG height and inertia ranges.
+- Previati, G., Mastinu, G., Gobbi, M. (2024). "Mass, Centre of Gravity
+  Location and Inertia Tensor of Electric Vehicles: Measured Data for
+  Accurate Accident Reconstruction." World Electric Vehicle Journal
+  15(6), 266. DOI: 10.3390/wevj15060266. CC BY.
+  Provides reference ranges for CG height and inertia, covering both
+  combustion and electric vehicles.
 - General FSAE design literature (publicly available team reports and
   SAE papers) used as a sanity check for FSAE dimensions.
 

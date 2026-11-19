@@ -34,14 +34,23 @@ function vehicle = stripDerivedAxlePositions(vehicle)
 %   Called before validation (to accept an already-validated struct whose
 %   x has been reconstructed in memory) and after validation (to avoid
 %   writing derived positions into the JSON).
-if ~isfield(vehicle.geometry, 'method')
+if ~isstruct(vehicle) || ~isfield(vehicle, 'geometry') || ...
+        ~isstruct(vehicle.geometry) || ~isfield(vehicle.geometry, 'method')
     return;
 end
 if string(vehicle.geometry.method) ~= "static_load_based"
     return;
 end
+if ~isfield(vehicle, 'axles')
+    return;
+end
+if ~iscell(vehicle.axles)
+    % Raw vehicle, straight from jsondecode: axles is a struct array
+    % or a scalar struct. Leave it to validate, which normalizes.
+    return;
+end
 for k = 1:numel(vehicle.axles)
-    if isfield(vehicle.axles{k}, 'x')
+    if isstruct(vehicle.axles{k}) && isfield(vehicle.axles{k}, 'x')
         vehicle.axles{k} = rmfield(vehicle.axles{k}, 'x');
     end
 end

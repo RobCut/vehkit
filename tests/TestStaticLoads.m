@@ -98,6 +98,14 @@ classdef TestStaticLoads < matlab.unittest.TestCase
 
             s = vehkit.geometry.cgToAxles(v);
             testCase.verifyEqual(s, d, 'AbsTol', 1e-10);
+
+            wcDirect = vehkit.geometry.wheelCentres(testCase.RoadCar);
+            wcStatic = vehkit.geometry.wheelCentres(v);
+            testCase.verifyEqual(wcStatic, wcDirect, 'AbsTol', 1e-10);
+
+            FDirect = vehkit.staticLoads.axles(testCase.RoadCar);
+            FStatic = vehkit.staticLoads.axles(v);
+            testCase.verifyEqual(FStatic, FDirect, 'AbsTol', 1e-8);
         end
 
         function test_static_loads_moment_equilibrium_road_car(testCase)

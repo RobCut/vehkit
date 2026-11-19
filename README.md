@@ -64,7 +64,9 @@ not yet validated.
 Validation is strict and produces identifiable error identifiers
 (`vehkit:invalidJSONStructure`, `vehkit:invalidParameter`,
 `vehkit:invalidInertia`, `vehkit:axleOrderMismatch`,
-`vehkit:wheelOrderMismatch`, `vehkit:conflictingGeometryDefinition`).
+`vehkit:wheelOrderMismatch`, `vehkit:conflictingGeometryDefinition`,
+`vehkit:unsupportedAxleCount`, `vehkit:unsupportedSchemaVersion`,
+`vehkit:missingData`; the complete list is in `docs/DESIGN.md` §1.5).
 Every failure has a code that downstream code can catch and react to,
 not a free-form message.
 
@@ -76,8 +78,8 @@ and mutual exclusivity between geometry definition methods.
 
 ## Results
 
-- 122 automated tests passing (`runtests('tests')`), plus continuous
-  integration on GitHub Actions.
+- Automated test suite passing locally and on GitHub Actions
+  (see CI badge above).
 - Two reference vehicles in `data/`: a generic segment C road car
   (1385 kg, 2.65 m wheelbase) and a Formula SAE-style single-seater
   (280 kg, 1.55 m wheelbase).
@@ -126,11 +128,11 @@ To reproduce:
 3. Regenerate the wheel centre plot:
 
     ```run('examples/plot_wheel_centres.m')```
+    The script writes `results/vehicle_plan.png`.
 
 4. Alternatively, run the full test suite via the build tool:
     ```buildtool test```
 
-The script writes `results/vehicle_plan.png`.
 
 ## Documentation
 
